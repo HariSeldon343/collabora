@@ -1,0 +1,39 @@
+# File di configurazione con dati sensibili
+.env
+.env.local
+*.env
+
+# File di log
+*.log
+error_log
+debug.log
+
+# File temporanei e cache
+tmp/
+temp/
+cache/
+*.tmp
+*.temp
+
+# File di backup
+*.bak
+*.backup
+*.old
+
+# Dipendenze (se presenti)
+node_modules/
+vendor/
+
+# File di sistema
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Database locali
+*.sqlite
+*.db
+
+# File di upload/storage (se contengono dati utente)
+uploads/
+storage/
