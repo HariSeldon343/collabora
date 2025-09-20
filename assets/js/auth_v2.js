@@ -9,20 +9,23 @@ const API_BASE = window.APIConfig ? window.APIConfig.getApiBaseUrl() : '/collabo
 // Load error handler if not already loaded
 if (!window.ErrorHandler) {
     const script = document.createElement('script');
-    script.src = 'assets/js/error-handler.js';
+    // Use absolute path to prevent issues when loaded from admin pages
+    script.src = '/Nexiosolution/collabora/assets/js/error-handler.js';
     document.head.appendChild(script);
 }
 
 // Load post-login configuration and handler
 if (!window.PostLoginConfig) {
     const configScript = document.createElement('script');
-    configScript.src = 'assets/js/post-login-config.js';
+    // Use absolute path to prevent issues when loaded from admin pages
+    configScript.src = '/Nexiosolution/collabora/assets/js/post-login-config.js';
     document.head.appendChild(configScript);
 }
 
 if (!window.PostLoginHandler) {
     const handlerScript = document.createElement('script');
-    handlerScript.src = 'assets/js/post-login-handler.js';
+    // Use absolute path to prevent issues when loaded from admin pages
+    handlerScript.src = '/Nexiosolution/collabora/assets/js/post-login-handler.js';
     document.head.appendChild(handlerScript);
 }
 

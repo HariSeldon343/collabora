@@ -178,3 +178,76 @@ La soluzione garantisce:
 5. Navigazione funzionante senza redirect loop
 
 Il test script test_menu_links.php fornisce un modo rapido per verificare che tutti i link siano corretti e può essere utilizzato per future validazioni.
+
+---
+
+## Aggiornamento 2025-09-20: Risoluzione CSP e Path JavaScript
+
+### Problemi Risolti
+
+#### 1. Content Security Policy (CSP) - Chart.js bloccato da CDN
+**Problema:** Il browser bloccava `https://cdn.jsdelivr.net/npm/chart.js` perché CSP permetteva solo `script-src 'self' 'unsafe-inline'`
+
+**Soluzione:**
+- Creata directory `/assets/js/vendor/`
+- Scaricato Chart.js v4.4.0 localmente come `/assets/js/vendor/chart.min.js`
+- Aggiornato `admin/index.php` per caricare Chart.js dal path locale invece del CDN
+
+#### 2. JavaScript Path Concatenation Issues
+**Problema:** `auth_v2.js` caricava script con path relativi che causavano redirect loop quando caricati da pagine admin
+
+**Soluzione in auth_v2.js:**
+```javascript
+// PRIMA (problematico):
+script.src = 'assets/js/error-handler.js';
+
+// DOPO (corretto):
+script.src = '/Nexiosolution/collabora/assets/js/error-handler.js';
+```
+
+Corretti 3 path:
+- `error-handler.js`
+- `post-login-config.js`
+- `post-login-handler.js`
+
+#### 3. Test Script Accessibility
+**File:** `test_menu_links.php` è accessibile e funzionante
+- Verifica spazi negli URL
+- Controlla pattern di concatenazione
+- Analizza runtime del sidebar
+- Fornisce report dettagliato
+
+### File Modificati
+
+1. **`/assets/js/vendor/chart.min.js`** (nuovo)
+   - Chart.js v4.4.0 salvato localmente
+
+2. **`/assets/js/auth_v2.js`**
+   - Linea 12: Path assoluto per error-handler.js
+   - Linea 20: Path assoluto per post-login-config.js
+   - Linea 26: Path assoluto per post-login-handler.js
+
+3. **`/admin/index.php`**
+   - Linea 429: Riferimento locale a Chart.js invece del CDN
+
+### Verifica delle Correzioni
+
+Per verificare che tutte le correzioni funzionino:
+
+1. **Test CSP**: Aprire admin/index.php e verificare che il grafico Chart.js si carichi senza errori CSP nella console
+2. **Test Path JS**: Verificare che non ci siano errori 404 per i file JavaScript quando si accede da pagine admin
+3. **Test Menu Links**: Eseguire `http://localhost/Nexiosolution/collabora/test_menu_links.php`
+
+### Best Practices Implementate
+
+1. **Sempre usare path assoluti** per script caricati dinamicamente
+2. **Evitare CDN esterni** quando CSP è restrittivo - salvare librerie localmente
+3. **Usare directory vendor** per librerie di terze parti
+4. **Documentare modifiche CSP** per future reference
+
+### Status Finale
+
+✅ **CSP Issue**: Risolto - Chart.js ora caricato localmente
+✅ **JavaScript Paths**: Risolto - Tutti i path usano riferimenti assoluti
+✅ **Test Script**: Funzionante e accessibile
+✅ **Documentation**: Aggiornata con tutti i dettagli delle correzioni

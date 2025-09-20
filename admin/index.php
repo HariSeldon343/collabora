@@ -425,7 +425,8 @@ try {
     <!-- API Configuration (must load first) -->
     <script src="../assets/js/api-config.js"></script>
     <script src="../assets/js/auth_v2.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js loaded locally to avoid CSP issues -->
+    <script src="../assets/js/vendor/chart.min.js"></script>
     <script src="../assets/js/admin.js"></script>
     <script>
         // Chart.js configuration

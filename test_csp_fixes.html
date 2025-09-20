@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CSP and JavaScript Fixes - Nexio Collabora</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #111827;
+            border-bottom: 3px solid #2563EB;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #4B5563;
+            margin-top: 0;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.success {
+            background: #10B981;
+            color: white;
+        }
+        .status.error {
+            background: #EF4444;
+            color: white;
+        }
+        .status.loading {
+            background: #F59E0B;
+            color: white;
+        }
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        code {
+            background: #F3F4F6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        #chartContainer {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        .info-box {
+            background: #EFF6FF;
+            border-left: 4px solid #2563EB;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .console-output {
+            background: #111827;
+            color: #10B981;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .console-error {
+            color: #EF4444;
+        }
+        .console-warn {
+            color: #F59E0B;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test CSP and JavaScript Fixes</h1>
+
+    <div class="info-box">
+        <strong>Test Environment:</strong> Nexio Collabora Admin Panel<br>
+        <strong>Date:</strong> <span id="testDate"></span><br>
+        <strong>Purpose:</strong> Verify that CSP issues are resolved and JavaScript paths work correctly
+    </div>
+
+    <!-- Test 1: Chart.js Loading -->
+    <div class="test-section">
+        <h2>Test 1: Chart.js Local Loading</h2>
+        <div class="test-item">
+            <span>Loading Chart.js from <code>/assets/js/vendor/chart.min.js</code></span>
+            <span id="chartStatus" class="status loading">Loading...</span>
+        </div>
+        <canvas id="testChart" style="display:none;"></canvas>
+        <div id="chartContainer"></div>
+    </div>
+
+    <!-- Test 2: JavaScript Path Resolution -->
+    <div class="test-section">
+        <h2>Test 2: JavaScript Path Resolution</h2>
+        <div class="test-item">
+            <span>Loading <code>auth_v2.js</code></span>
+            <span id="authStatus" class="status loading">Loading...</span>
+        </div>
+        <div class="test-item">
+            <span>Loading <code>error-handler.js</code> (dynamically)</span>
+            <span id="errorHandlerStatus" class="status loading">Checking...</span>
+        </div>
+        <div class="test-item">
+            <span>Loading <code>post-login-config.js</code> (dynamically)</span>
+            <span id="postLoginConfigStatus" class="status loading">Checking...</span>
+        </div>
+        <div class="test-item">
+            <span>Loading <code>post-login-handler.js</code> (dynamically)</span>
+            <span id="postLoginHandlerStatus" class="status loading">Checking...</span>
+        </div>
+    </div>
+
+    <!-- Test 3: CSP Violations -->
+    <div class="test-section">
+        <h2>Test 3: Content Security Policy Check</h2>
+        <div class="test-item">
+            <span>CSP Violations Detected</span>
+            <span id="cspStatus" class="status success">None</span>
+        </div>
+        <div id="cspViolations" class="console-output" style="display:none;"></div>
+    </div>
+
+    <!-- Test 4: Network Requests -->
+    <div class="test-section">
+        <h2>Test 4: Network Request Status</h2>
+        <div class="test-item">
+            <span>Failed Network Requests (404s)</span>
+            <span id="networkStatus" class="status success">0</span>
+        </div>
+        <div id="networkErrors" class="console-output" style="display:none;"></div>
+    </div>
+
+    <!-- Console Output -->
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <div id="consoleOutput" class="console-output"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Set test date
+        document.getElementById('testDate').textContent = new Date().toLocaleString('it-IT');
+
+        // Console capture
+        const consoleOutput = document.getElementById('consoleOutput');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        let cspViolationCount = 0;
+        let networkErrorCount = 0;
+
+        function addToConsole(message, type = 'log') {
+            const className = type === 'error' ? 'console-error' : type === 'warn' ? 'console-warn' : '';
+            consoleOutput.innerHTML += `<div class="${className}">[${type.toUpperCase()}] ${message}</div>`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            addToConsole(args.join(' '), 'log');
+            originalLog.apply(console, args);
+        };
+
+        console.error = function(...args) {
+            addToConsole(args.join(' '), 'error');
+            originalError.apply(console, args);
+        };
+
+        console.warn = function(...args) {
+            addToConsole(args.join(' '), 'warn');
+            originalWarn.apply(console, args);
+        };
+
+        // CSP violation detection
+        document.addEventListener('securitypolicyviolation', (e) => {
+            cspViolationCount++;
+            const cspStatus = document.getElementById('cspStatus');
+            cspStatus.textContent = cspViolationCount + ' violations';
+            cspStatus.className = 'status error';
+
+            const violations = document.getElementById('cspViolations');
+            violations.style.display = 'block';
+            violations.innerHTML += `<div class="console-error">CSP Violation: ${e.violatedDirective} - ${e.blockedURI}</div>`;
+
+            console.error(`CSP Violation: ${e.violatedDirective} - ${e.blockedURI}`);
+        });
+
+        // Network error detection
+        window.addEventListener('error', (e) => {
+            if (e.target && e.target.tagName === 'SCRIPT') {
+                networkErrorCount++;
+                const networkStatus = document.getElementById('networkStatus');
+                networkStatus.textContent = networkErrorCount + ' errors';
+                networkStatus.className = 'status error';
+
+                const networkErrors = document.getElementById('networkErrors');
+                networkErrors.style.display = 'block';
+                networkErrors.innerHTML += `<div class="console-error">Failed to load: ${e.target.src}</div>`;
+
+                console.error(`Failed to load script: ${e.target.src}`);
+            }
+        }, true);
+    </script>
+
+    <!-- Load Chart.js locally -->
+    <script src="/Nexiosolution/collabora/assets/js/vendor/chart.min.js"
+            onload="document.getElementById('chartStatus').className='status success'; document.getElementById('chartStatus').textContent='Loaded'; console.log('✅ Chart.js loaded successfully from local vendor directory');"
+            onerror="document.getElementById('chartStatus').className='status error'; document.getElementById('chartStatus').textContent='Failed'; console.error('❌ Failed to load Chart.js from local vendor directory');"></script>
+
+    <!-- Load auth_v2.js -->
+    <script src="/Nexiosolution/collabora/assets/js/auth_v2.js"
+            onload="document.getElementById('authStatus').className='status success'; document.getElementById('authStatus').textContent='Loaded'; console.log('✅ auth_v2.js loaded successfully');"
+            onerror="document.getElementById('authStatus').className='status error'; document.getElementById('authStatus').textContent='Failed'; console.error('❌ Failed to load auth_v2.js');"></script>
+
+    <script>
+        // Wait for scripts to load
+        setTimeout(() => {
+            // Test Chart.js
+            if (typeof Chart !== 'undefined') {
+                console.log('✅ Chart.js is available globally');
+
+                // Create a test chart
+                const ctx = document.getElementById('testChart').getContext('2d');
+                const testChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Success', 'Pending', 'Failed'],
+                        datasets: [{
+                            data: [75, 20, 5],
+                            backgroundColor: ['#10B981', '#F59E0B', '#EF4444']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+
+                // Move chart to container
+                document.getElementById('testChart').style.display = 'block';
+                document.getElementById('chartContainer').appendChild(document.getElementById('testChart'));
+
+                console.log('✅ Test chart created successfully');
+            } else {
+                console.error('❌ Chart.js is not available');
+                document.getElementById('chartStatus').className = 'status error';
+                document.getElementById('chartStatus').textContent = 'Not Available';
+            }
+
+            // Check for dynamically loaded scripts
+            if (window.ErrorHandler) {
+                document.getElementById('errorHandlerStatus').className = 'status success';
+                document.getElementById('errorHandlerStatus').textContent = 'Loaded';
+                console.log('✅ ErrorHandler loaded successfully');
+            } else {
+                document.getElementById('errorHandlerStatus').className = 'status error';
+                document.getElementById('errorHandlerStatus').textContent = 'Not Found';
+                console.error('❌ ErrorHandler not loaded');
+            }
+
+            if (window.PostLoginConfig) {
+                document.getElementById('postLoginConfigStatus').className = 'status success';
+                document.getElementById('postLoginConfigStatus').textContent = 'Loaded';
+                console.log('✅ PostLoginConfig loaded successfully');
+            } else {
+                document.getElementById('postLoginConfigStatus').className = 'status error';
+                document.getElementById('postLoginConfigStatus').textContent = 'Not Found';
+                console.error('❌ PostLoginConfig not loaded');
+            }
+
+            if (window.PostLoginHandler) {
+                document.getElementById('postLoginHandlerStatus').className = 'status success';
+                document.getElementById('postLoginHandlerStatus').textContent = 'Loaded';
+                console.log('✅ PostLoginHandler loaded successfully');
+            } else {
+                document.getElementById('postLoginHandlerStatus').className = 'status error';
+                document.getElementById('postLoginHandlerStatus').textContent = 'Not Found';
+                console.error('❌ PostLoginHandler not loaded');
+            }
+
+            // Final summary
+            console.log('');
+            console.log('=== TEST SUMMARY ===');
+            console.log(`CSP Violations: ${cspViolationCount}`);
+            console.log(`Network Errors: ${networkErrorCount}`);
+
+            if (cspViolationCount === 0 && networkErrorCount === 0 && typeof Chart !== 'undefined') {
+                console.log('✅ ALL TESTS PASSED! CSP and JavaScript path issues are resolved.');
+            } else {
+                console.error('❌ Some issues remain. Check the console output above.');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
