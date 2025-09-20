@@ -285,12 +285,58 @@ try {
 
         case 'switch_tenant':
             $tenantId = $data['tenant_id'] ?? 0;
-            $auth->switchTenant($tenantId);
-            echo json_encode([
-                'success' => true,
-                'message' => 'Tenant cambiato con successo',
-                'current_tenant_id' => $tenantId
-            ]);
+            if (empty($tenantId)) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'missing_field',
+                        'message' => 'Tenant ID is required',
+                        'fields' => ['tenant_id']
+                    ]
+                ]);
+                exit;
+            }
+
+            try {
+                $result = $auth->switchTenant($tenantId);
+                echo json_encode($result);
+            } catch (Exception $e) {
+                http_response_code(403);
+                echo json_encode([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'switch_failed',
+                        'message' => $e->getMessage(),
+                        'fields' => []
+                    ]
+                ]);
+            }
+            break;
+
+        case 'get_tenants':
+            try {
+                $tenants = $auth->getAvailableTenants();
+                $currentTenant = $auth->getCurrentTenant();
+
+                echo json_encode([
+                    'success' => true,
+                    'tenants' => $tenants,
+                    'current_tenant' => $currentTenant,
+                    'user_role' => $_SESSION['user_role'] ?? null,
+                    'can_switch' => in_array($_SESSION['user_role'] ?? '', ['admin', 'special_user'])
+                ]);
+            } catch (Exception $e) {
+                http_response_code(401);
+                echo json_encode([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'unauthorized',
+                        'message' => $e->getMessage(),
+                        'fields' => []
+                    ]
+                ]);
+            }
             break;
 
         case 'check':
@@ -319,7 +365,7 @@ try {
                 'success' => false,
                 'error' => [
                     'code' => 'invalid_action',
-                    'message' => 'Invalid action: "' . $action . '". Valid actions are: login, logout, switch_tenant, check, test',
+                    'message' => 'Invalid action: "' . $action . '". Valid actions are: login, logout, switch_tenant, get_tenants, check, test',
                     'fields' => ['action']
                 ]
             ]);

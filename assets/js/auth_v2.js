@@ -150,7 +150,16 @@ function initializeLoginForm() {
 
                 // Debug logging
                 console.log('Login successful, user data:', data.user);
+                console.log('Available tenants:', data.tenants);
                 console.log('PostLoginHandler available:', !!window.PostLoginHandler);
+
+                // Check if user has multiple tenants and needs to select one
+                if (data.tenants && data.tenants.length > 1 && !data.current_tenant_id) {
+                    // Show tenant selector for multi-tenant users
+                    console.log('User has multiple tenants, showing selector');
+                    showTenantSelector(data);
+                    return;
+                }
 
                 // ALWAYS redirect after successful login - NO EXCEPTIONS
                 // Use PostLoginHandler for deterministic navigation
@@ -449,16 +458,17 @@ async function switchTenant(tenantId) {
         let data;
 
         if (window.APIConfig) {
-            data = await APIConfig.post('auth_v2.php', {
+            data = await APIConfig.post('auth_simple.php', {
                 action: 'switch_tenant',
                 tenant_id: tenantId
             });
         } else {
-            const response = await fetch(`${API_BASE}/auth_v2.php`, {
+            const response = await fetch(`${API_BASE}/auth_simple.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     action: 'switch_tenant',
                     tenant_id: tenantId
@@ -743,11 +753,280 @@ function debounce(func, wait) {
     };
 }
 
+// Show tenant selector modal for multi-tenant users
+function showTenantSelector(loginData) {
+    const modalHtml = `
+        <div id="tenantSelectorModal" class="modal-overlay">
+            <div class="modal-content tenant-selector-modal">
+                <div class="modal-header">
+                    <h2>Seleziona Tenant</h2>
+                    <p>Hai accesso a più tenant. Seleziona quello con cui vuoi lavorare:</p>
+                </div>
+                <div class="modal-body">
+                    <div class="tenant-list">
+                        ${loginData.tenants.map(tenant => `
+                            <div class="tenant-item" data-tenant-id="${tenant.id}">
+                                <div class="tenant-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21m-6-13.5V21m-2.25-4.5h4.5m-4.5-3h4.5m-4.5-3h4.5m-4.5-3h4.5" />
+                                    </svg>
+                                </div>
+                                <div class="tenant-info">
+                                    <h3>${tenant.name}</h3>
+                                    <p>Codice: ${tenant.code}</p>
+                                    ${tenant.is_primary ? '<span class="tenant-badge primary">Principale</span>' : ''}
+                                    ${tenant.last_active ? '<span class="tenant-badge">Ultimo accesso</span>' : ''}
+                                </div>
+                                <svg class="tenant-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                </svg>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Add styles if not already present
+    if (!document.getElementById('tenantSelectorStyles')) {
+        const styles = `
+            <style id="tenantSelectorStyles">
+                .modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    animation: fadeIn 0.3s ease;
+                }
+
+                .tenant-selector-modal {
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                    max-width: 500px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow: hidden;
+                    animation: slideUp 0.3s ease;
+                }
+
+                .modal-header {
+                    padding: 24px;
+                    border-bottom: 1px solid #e5e7eb;
+                }
+
+                .modal-header h2 {
+                    font-size: 20px;
+                    font-weight: 600;
+                    color: #111827;
+                    margin: 0 0 8px 0;
+                }
+
+                .modal-header p {
+                    color: #6b7280;
+                    font-size: 14px;
+                    margin: 0;
+                }
+
+                .modal-body {
+                    padding: 24px;
+                    overflow-y: auto;
+                    max-height: calc(80vh - 120px);
+                }
+
+                .tenant-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+
+                .tenant-item {
+                    display: flex;
+                    align-items: center;
+                    padding: 16px;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+
+                .tenant-item:hover {
+                    background: #f9fafb;
+                    border-color: #4f46e5;
+                    transform: translateX(4px);
+                }
+
+                .tenant-icon {
+                    width: 48px;
+                    height: 48px;
+                    background: #f3f4f6;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-right: 16px;
+                    flex-shrink: 0;
+                }
+
+                .tenant-icon svg {
+                    width: 24px;
+                    height: 24px;
+                    color: #6b7280;
+                }
+
+                .tenant-info {
+                    flex: 1;
+                }
+
+                .tenant-info h3 {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #111827;
+                    margin: 0 0 4px 0;
+                }
+
+                .tenant-info p {
+                    font-size: 14px;
+                    color: #6b7280;
+                    margin: 0;
+                }
+
+                .tenant-badge {
+                    display: inline-block;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 12px;
+                    font-weight: 500;
+                    margin-top: 4px;
+                    margin-right: 4px;
+                    background: #f3f4f6;
+                    color: #6b7280;
+                }
+
+                .tenant-badge.primary {
+                    background: #dbeafe;
+                    color: #1e40af;
+                }
+
+                .tenant-arrow {
+                    width: 20px;
+                    height: 20px;
+                    color: #9ca3af;
+                    flex-shrink: 0;
+                }
+
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+
+                @keyframes slideUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            </style>
+        `;
+        document.head.insertAdjacentHTML('beforeend', styles);
+    }
+
+    // Handle tenant selection
+    document.querySelectorAll('.tenant-item').forEach(item => {
+        item.addEventListener('click', async function() {
+            const tenantId = this.dataset.tenantId;
+            const selectedTenant = loginData.tenants.find(t => t.id == tenantId);
+
+            showToast('info', 'Selezione tenant', `Accesso a ${selectedTenant.name}...`);
+
+            // Switch to selected tenant
+            try {
+                const response = await fetch(`${API_BASE}/auth_simple.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        action: 'switch_tenant',
+                        tenant_id: tenantId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Remove modal
+                    document.getElementById('tenantSelectorModal').remove();
+
+                    // Redirect based on user role
+                    if (window.PostLoginHandler && typeof window.PostLoginHandler.handlePostLogin === 'function') {
+                        window.PostLoginHandler.handlePostLogin(loginData);
+                    } else {
+                        // Fallback redirect
+                        let redirectUrl = '/Nexiosolution/collabora/home_v2.php';
+                        if (loginData.user && loginData.user.role === 'admin') {
+                            redirectUrl = '/Nexiosolution/collabora/admin/index.php';
+                        }
+                        window.location.href = redirectUrl;
+                    }
+                } else {
+                    showToast('error', 'Errore', data.error?.message || 'Impossibile selezionare il tenant');
+                }
+            } catch (error) {
+                console.error('Tenant selection error:', error);
+                showToast('error', 'Errore', 'Si è verificato un errore durante la selezione del tenant');
+            }
+        });
+    });
+}
+
+// Load available tenants for logged in user
+async function loadAvailableTenants() {
+    try {
+        const response = await fetch(`${API_BASE}/auth_simple.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                action: 'get_tenants'
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            return data;
+        }
+    } catch (error) {
+        console.error('Failed to load tenants:', error);
+    }
+    return null;
+}
+
 // Export functions for use in other scripts
 window.authV2 = {
     showToast,
     formatFileSize,
     formatDate,
     debounce,
-    switchTenant
+    switchTenant,
+    showTenantSelector,
+    loadAvailableTenants
 };

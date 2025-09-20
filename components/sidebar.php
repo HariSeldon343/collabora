@@ -1,9 +1,24 @@
 <?php
 // Get current page for active menu highlighting
 $currentPage = basename($_SERVER['PHP_SELF']);
-$userRole = isset($_SESSION['user_v2']['role']) ? $_SESSION['user_v2']['role'] : 'standard_user';
-$currentTenant = isset($_SESSION['user_v2']['current_tenant']) ? $_SESSION['user_v2']['current_tenant'] : null;
-$userTenants = isset($_SESSION['user_v2']['tenants']) ? $_SESSION['user_v2']['tenants'] : [];
+
+// Get user information from session (supports both v2 and simple auth)
+$userRole = $_SESSION['user_role'] ?? ($_SESSION['user_v2']['role'] ?? 'standard_user');
+$currentTenantId = $_SESSION['current_tenant_id'] ?? null;
+
+// Get current tenant information
+$currentTenant = null;
+if ($currentTenantId && isset($_SESSION['tenants'])) {
+    foreach ($_SESSION['tenants'] as $tenant) {
+        if ($tenant['id'] == $currentTenantId) {
+            $currentTenant = $tenant;
+            break;
+        }
+    }
+}
+
+// Get available tenants for the user
+$userTenants = $_SESSION['tenants'] ?? [];
 ?>
 
 <aside class="sidebar" id="sidebar">
@@ -175,10 +190,10 @@ $userTenants = isset($_SESSION['user_v2']['tenants']) ? $_SESSION['user_v2']['te
     <div class="sidebar-footer">
         <div class="user-profile">
             <div class="user-avatar">
-                <span><?php echo strtoupper(substr($_SESSION['user_v2']['name'] ?? 'U', 0, 2)); ?></span>
+                <span><?php echo strtoupper(substr($_SESSION['user_name'] ?? $_SESSION['user_v2']['name'] ?? 'U', 0, 2)); ?></span>
             </div>
             <div class="user-info">
-                <p class="user-name"><?php echo htmlspecialchars($_SESSION['user_v2']['name'] ?? 'Utente'); ?></p>
+                <p class="user-name"><?php echo htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['user_v2']['name'] ?? 'Utente'); ?></p>
                 <p class="user-role"><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $userRole))); ?></p>
             </div>
             <button class="logout-btn" onclick="window.location.href='index_v2.php?action=logout'">

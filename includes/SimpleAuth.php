@@ -128,7 +128,7 @@ class SimpleAuth {
 
     public function login($email, $password) {
         try {
-            // Validate input
+            // Validate input - NO TENANT CODE REQUIRED
             $missingFields = [];
             if (empty($email)) {
                 $missingFields[] = 'email';
@@ -145,11 +145,12 @@ class SimpleAuth {
             }
 
             // Log attempt (without password)
-            error_log('Login attempt for email: ' . $email);
+            error_log('[SimpleAuth] Login attempt for email: ' . $email);
 
-            // Get user from database
+            // Get user from database with last_active_tenant_id
             $stmt = $this->db->prepare("
-                SELECT id, email, password, first_name, last_name, role, is_system_admin, status
+                SELECT id, email, password, first_name, last_name, role,
+                       is_system_admin, status, last_active_tenant_id
                 FROM users
                 WHERE email = :email
                 AND (deleted_at IS NULL OR deleted_at = '')
@@ -158,75 +159,153 @@ class SimpleAuth {
             $user = $stmt->fetch();
 
             if (!$user) {
-                // Log for debugging but don't reveal to client
-                error_log('User not found for email: ' . $email);
+                error_log('[SimpleAuth] User not found for email: ' . $email);
                 throw new InvalidCredentialsException('Credenziali non valide');
             }
 
             // Check if account is active
             if ($user['status'] !== 'active') {
-                error_log('Account inactive for email: ' . $email);
+                error_log('[SimpleAuth] Account inactive for email: ' . $email);
                 throw new AccountInactiveException('Account non attivo');
             }
 
             // Verify password
             if (!password_verify($password, $user['password'])) {
-                error_log('Invalid password for email: ' . $email);
+                error_log('[SimpleAuth] Invalid password for email: ' . $email);
                 throw new InvalidCredentialsException('Credenziali non valide');
             }
 
-            error_log('Login successful for user: ' . $user['id'] . ' (' . $email . ')');
+            error_log('[SimpleAuth] Password verified for user: ' . $user['id']);
 
             // Update last login
             $stmt = $this->db->prepare("UPDATE users SET last_login = NOW() WHERE id = :id");
             $stmt->execute(['id' => $user['id']]);
 
-            // Get user's tenants - check for different table names
-            $tenantQuery = "
-                SELECT t.id, t.code, t.name
-                FROM tenants t
-                LEFT JOIN user_tenant_associations uta ON t.id = uta.tenant_id
-                WHERE (uta.user_id = :user_id OR :is_admin = 1)
-                AND (t.status = 'active' OR t.status IS NULL)
-                GROUP BY t.id
-            ";
+            // Get user's accessible tenants based on role
+            $tenants = [];
+            $selectedTenantId = null;
+            $autoSelected = false;
 
-            // Try alternate table name if first fails
-            try {
-                $stmt = $this->db->prepare($tenantQuery);
+            if ($user['role'] === 'admin' || $user['is_system_admin'] == 1) {
+                // Admin: Get ALL active tenants (no association required)
+                error_log('[SimpleAuth] User is admin - fetching all active tenants');
+                $stmt = $this->db->prepare("
+                    SELECT id, code, name, status
+                    FROM tenants
+                    WHERE status = 'active'
+                    AND (deleted_at IS NULL OR deleted_at = '')
+                    ORDER BY name
+                ");
+                $stmt->execute();
+                $tenants = $stmt->fetchAll();
+
+            } else if ($user['role'] === 'special_user') {
+                // Special user: Get assigned tenants from associations
+                error_log('[SimpleAuth] User is special_user - fetching assigned tenants');
+                $stmt = $this->db->prepare("
+                    SELECT t.id, t.code, t.name, t.status,
+                           uta.is_default as is_primary, uta.role as tenant_role,
+                           (t.id = :last_active) as was_last_active
+                    FROM user_tenant_associations uta
+                    INNER JOIN tenants t ON uta.tenant_id = t.id
+                    WHERE uta.user_id = :user_id
+                    AND t.status = 'active'
+                    AND (t.deleted_at IS NULL OR t.deleted_at = '')
+                    ORDER BY uta.is_default DESC, was_last_active DESC, t.name
+                ");
                 $stmt->execute([
                     'user_id' => $user['id'],
-                    'is_admin' => ($user['role'] === 'admin' || $user['is_system_admin'] == 1) ? 1 : 0
+                    'last_active' => $user['last_active_tenant_id']
                 ]);
                 $tenants = $stmt->fetchAll();
-            } catch (PDOException $e) {
-                // Try simpler query if join table doesn't exist
-                try {
-                    $stmt = $this->db->prepare("SELECT id, code, name FROM tenants WHERE status = 'active' OR status IS NULL");
-                    $stmt->execute();
-                    $tenants = $stmt->fetchAll();
-                } catch (PDOException $e2) {
-                    $tenants = [];
+
+            } else {
+                // Standard user: Get single assigned tenant (auto-select)
+                error_log('[SimpleAuth] User is standard_user - fetching single tenant');
+                $stmt = $this->db->prepare("
+                    SELECT t.id, t.code, t.name, t.status,
+                           uta.is_default as is_primary, uta.role as tenant_role
+                    FROM user_tenant_associations uta
+                    INNER JOIN tenants t ON uta.tenant_id = t.id
+                    WHERE uta.user_id = :user_id
+                    AND t.status = 'active'
+                    AND (t.deleted_at IS NULL OR t.deleted_at = '')
+                    LIMIT 1
+                ");
+                $stmt->execute(['user_id' => $user['id']]);
+                $tenants = $stmt->fetchAll();
+
+                // Auto-select for standard user
+                if (!empty($tenants)) {
+                    $autoSelected = true;
                 }
             }
 
-            // If no tenants, get default tenant
+            error_log('[SimpleAuth] Found ' . count($tenants) . ' accessible tenants');
+
+            // Check if user has no tenant access
             if (empty($tenants)) {
-                $stmt = $this->db->prepare("SELECT id, code, name FROM tenants WHERE code = 'DEFAULT'");
-                $stmt->execute();
-                $defaultTenant = $stmt->fetch();
-                if ($defaultTenant) {
-                    $tenants = [$defaultTenant];
+                error_log('[SimpleAuth] No tenant access for user: ' . $user['id']);
+                throw new AuthException('Nessun tenant accessibile per questo utente');
+            }
+
+            // Determine default tenant to select
+            if ($autoSelected || count($tenants) === 1) {
+                // Single tenant or standard user - auto select
+                $selectedTenantId = $tenants[0]['id'];
+                $autoSelected = true;
+            } else {
+                // Multiple tenants - use smart selection
+                // Priority: last_active_tenant_id > primary > first
+                $selectedTenantId = null;
+
+                // Check if last active tenant is still accessible
+                if ($user['last_active_tenant_id']) {
+                    foreach ($tenants as $tenant) {
+                        if ($tenant['id'] == $user['last_active_tenant_id']) {
+                            $selectedTenantId = $tenant['id'];
+                            break;
+                        }
+                    }
+                }
+
+                // If not found, look for primary tenant
+                if (!$selectedTenantId) {
+                    foreach ($tenants as $tenant) {
+                        if (isset($tenant['is_primary']) && $tenant['is_primary']) {
+                            $selectedTenantId = $tenant['id'];
+                            break;
+                        }
+                    }
+                }
+
+                // If still not found, select first tenant
+                if (!$selectedTenantId) {
+                    $selectedTenantId = $tenants[0]['id'];
                 }
             }
 
-            // Set up session
+            // Update last_active_tenant_id if changed
+            if ($selectedTenantId && $selectedTenantId != $user['last_active_tenant_id']) {
+                $stmt = $this->db->prepare("
+                    UPDATE users
+                    SET last_active_tenant_id = :tenant_id
+                    WHERE id = :user_id
+                ");
+                $stmt->execute([
+                    'tenant_id' => $selectedTenantId,
+                    'user_id' => $user['id']
+                ]);
+            }
+
+            // Set up session with tenant information
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['user_name'] = trim($user['first_name'] . ' ' . $user['last_name']);
             $_SESSION['user_role'] = $user['role'];
-            $_SESSION['is_admin'] = $user['is_system_admin'] == 1;
-            $_SESSION['current_tenant_id'] = !empty($tenants) ? $tenants[0]['id'] : null;
+            $_SESSION['is_admin'] = ($user['role'] === 'admin' || $user['is_system_admin'] == 1);
+            $_SESSION['current_tenant_id'] = $selectedTenantId;
+            $_SESSION['available_tenants'] = $tenants;
             $_SESSION['user_v2'] = [
                 'id' => $user['id'],
                 'email' => $user['email'],
@@ -234,7 +313,9 @@ class SimpleAuth {
                 'role' => $user['role']
             ];
 
-            // Return success response
+            error_log('[SimpleAuth] Session configured with tenant_id: ' . $selectedTenantId);
+
+            // Return success response with tenant information
             return [
                 'success' => true,
                 'user' => [
@@ -242,10 +323,12 @@ class SimpleAuth {
                     'email' => $user['email'],
                     'name' => trim($user['first_name'] . ' ' . $user['last_name']),
                     'role' => $user['role'],
-                    'is_admin' => $user['is_system_admin'] == 1
+                    'is_admin' => $_SESSION['is_admin']
                 ],
                 'tenants' => $tenants,
-                'current_tenant_id' => $_SESSION['current_tenant_id'],
+                'current_tenant_id' => $selectedTenantId,
+                'auto_selected' => $autoSelected,
+                'needs_tenant_selection' => (count($tenants) > 1 && !$autoSelected),
                 'session_id' => session_id()
             ];
 
@@ -253,10 +336,10 @@ class SimpleAuth {
             // Re-throw custom exceptions
             throw $e;
         } catch (PDOException $e) {
-            error_log('Database error during login: ' . $e->getMessage());
+            error_log('[SimpleAuth] Database error during login: ' . $e->getMessage());
             throw new DatabaseException('Database error during login');
         } catch (Exception $e) {
-            error_log('Unexpected error during login: ' . $e->getMessage());
+            error_log('[SimpleAuth] Unexpected error during login: ' . $e->getMessage());
             throw new AuthException('Unexpected error during login');
         }
     }
@@ -277,56 +360,164 @@ class SimpleAuth {
         return $_SESSION['user_v2'] ?? null;
     }
 
+    public function getAvailableTenants() {
+        if (!$this->isAuthenticated()) {
+            throw new InvalidCredentialsException('Non autenticato');
+        }
+
+        $userId = $_SESSION['user_id'];
+        $userRole = $_SESSION['user_role'] ?? '';
+        $isAdmin = $_SESSION['is_admin'] ?? false;
+
+        $tenants = [];
+
+        if ($isAdmin || $userRole === 'admin') {
+            // Admin: Get ALL active tenants
+            $stmt = $this->db->prepare("
+                SELECT id, code, name, status
+                FROM tenants
+                WHERE status = 'active'
+                AND (deleted_at IS NULL OR deleted_at = '')
+                ORDER BY name
+            ");
+            $stmt->execute();
+            $tenants = $stmt->fetchAll();
+
+        } else if ($userRole === 'special_user') {
+            // Special user: Get assigned tenants
+            $stmt = $this->db->prepare("
+                SELECT t.id, t.code, t.name, t.status,
+                       uta.is_default as is_primary, uta.role as tenant_role
+                FROM user_tenant_associations uta
+                INNER JOIN tenants t ON uta.tenant_id = t.id
+                WHERE uta.user_id = :user_id
+                AND t.status = 'active'
+                AND (t.deleted_at IS NULL OR t.deleted_at = '')
+                ORDER BY uta.is_default DESC, t.name
+            ");
+            $stmt->execute(['user_id' => $userId]);
+            $tenants = $stmt->fetchAll();
+
+        } else {
+            // Standard user: Get single assigned tenant
+            $stmt = $this->db->prepare("
+                SELECT t.id, t.code, t.name, t.status,
+                       uta.is_default as is_primary, uta.role as tenant_role
+                FROM user_tenant_associations uta
+                INNER JOIN tenants t ON uta.tenant_id = t.id
+                WHERE uta.user_id = :user_id
+                AND t.status = 'active'
+                AND (t.deleted_at IS NULL OR t.deleted_at = '')
+                LIMIT 1
+            ");
+            $stmt->execute(['user_id' => $userId]);
+            $tenants = $stmt->fetchAll();
+        }
+
+        // Mark current tenant
+        $currentTenantId = $_SESSION['current_tenant_id'] ?? null;
+        foreach ($tenants as &$tenant) {
+            $tenant['is_current'] = ($tenant['id'] == $currentTenantId);
+        }
+
+        return $tenants;
+    }
+
+    public function getCurrentTenant() {
+        if (!$this->isAuthenticated()) {
+            return null;
+        }
+
+        $tenantId = $_SESSION['current_tenant_id'] ?? null;
+        if (!$tenantId) {
+            return null;
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT id, code, name, status
+            FROM tenants
+            WHERE id = :tenant_id
+            AND status = 'active'
+            AND (deleted_at IS NULL OR deleted_at = '')
+        ");
+        $stmt->execute(['tenant_id' => $tenantId]);
+        return $stmt->fetch() ?: null;
+    }
+
     public function switchTenant($tenantId) {
         if (!$this->isAuthenticated()) {
             throw new InvalidCredentialsException('Non autenticato');
         }
 
-        // Admin can switch to any tenant
-        if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']) {
-            $_SESSION['current_tenant_id'] = $tenantId;
-            return true;
+        $userId = $_SESSION['user_id'];
+        $userRole = $_SESSION['user_role'] ?? '';
+        $isAdmin = $_SESSION['is_admin'] ?? false;
+
+        // Standard users cannot switch tenants
+        if ($userRole === 'standard_user') {
+            throw new AuthException('Gli utenti standard non possono cambiare tenant');
         }
 
-        // Verify user has access to this tenant - try both table names
-        try {
+        // Verify the tenant exists and is active
+        $stmt = $this->db->prepare("
+            SELECT id, code, name, status
+            FROM tenants
+            WHERE id = :tenant_id
+            AND status = 'active'
+            AND (deleted_at IS NULL OR deleted_at = '')
+        ");
+        $stmt->execute(['tenant_id' => $tenantId]);
+        $tenant = $stmt->fetch();
+
+        if (!$tenant) {
+            throw new AuthException('Tenant non valido o non attivo');
+        }
+
+        // Admin can switch to any tenant
+        if ($isAdmin || $userRole === 'admin') {
+            error_log('[SimpleAuth] Admin switching to tenant: ' . $tenantId);
+        } else {
+            // Special user - verify they have access
             $stmt = $this->db->prepare("
                 SELECT COUNT(*) as count
                 FROM user_tenant_associations
                 WHERE user_id = :user_id
                 AND tenant_id = :tenant_id
+                AND (access_expires_at IS NULL OR access_expires_at > NOW())
             ");
             $stmt->execute([
-                'user_id' => $_SESSION['user_id'],
+                'user_id' => $userId,
                 'tenant_id' => $tenantId
             ]);
             $result = $stmt->fetch();
-        } catch (PDOException $e) {
-            // Try alternate table name
-            try {
-                $stmt = $this->db->prepare("
-                    SELECT COUNT(*) as count
-                    FROM user_tenants
-                    WHERE user_id = :user_id
-                    AND tenant_id = :tenant_id
-                ");
-                $stmt->execute([
-                    'user_id' => $_SESSION['user_id'],
-                    'tenant_id' => $tenantId
-                ]);
-                $result = $stmt->fetch();
-            } catch (PDOException $e2) {
-                // If both fail, deny access for non-admins
+
+            if ($result['count'] == 0) {
+                error_log('[SimpleAuth] User ' . $userId . ' denied access to tenant ' . $tenantId);
                 throw new AuthException('Accesso al tenant non autorizzato');
             }
         }
 
-        if ($result['count'] == 0) {
-            throw new AuthException('Accesso al tenant non autorizzato');
-        }
-
+        // Update session
         $_SESSION['current_tenant_id'] = $tenantId;
-        return true;
+
+        // Update last_active_tenant_id in database
+        $stmt = $this->db->prepare("
+            UPDATE users
+            SET last_active_tenant_id = :tenant_id
+            WHERE id = :user_id
+        ");
+        $stmt->execute([
+            'tenant_id' => $tenantId,
+            'user_id' => $userId
+        ]);
+
+        error_log('[SimpleAuth] User ' . $userId . ' switched to tenant ' . $tenantId);
+
+        return [
+            'success' => true,
+            'tenant' => $tenant,
+            'message' => 'Tenant cambiato con successo'
+        ];
     }
 
     public function generateCSRFToken() {

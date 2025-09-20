@@ -237,6 +237,92 @@ class SessionHelper {
     }
 
     /**
+     * Ottiene il tenant corrente
+     *
+     * @return int|null
+     */
+    public static function getCurrentTenantId(): ?int {
+        self::init();
+        return isset($_SESSION['current_tenant_id']) ? (int)$_SESSION['current_tenant_id'] : null;
+    }
+
+    /**
+     * Imposta il tenant corrente
+     *
+     * @param int $tenantId
+     * @return void
+     */
+    public static function setCurrentTenantId(int $tenantId): void {
+        self::init();
+
+        // Store previous tenant for tracking
+        if (isset($_SESSION['current_tenant_id'])) {
+            $_SESSION['previous_tenant_id'] = $_SESSION['current_tenant_id'];
+        }
+
+        $_SESSION['current_tenant_id'] = $tenantId;
+
+        self::debug('Tenant ID set to: ' . $tenantId);
+    }
+
+    /**
+     * Ottiene i tenant disponibili per l'utente
+     *
+     * @return array|null
+     */
+    public static function getAvailableTenants(): ?array {
+        self::init();
+        return $_SESSION['available_tenants'] ?? null;
+    }
+
+    /**
+     * Verifica se l'utente può cambiare tenant
+     *
+     * @return bool
+     */
+    public static function canSwitchTenant(): bool {
+        if (!self::isAuthenticated()) {
+            return false;
+        }
+
+        $user = self::getCurrentUser();
+        $role = $user['role'] ?? '';
+
+        return in_array($role, ['admin', 'special_user']);
+    }
+
+    /**
+     * Verifica se l'utente ha accesso a un tenant specifico
+     *
+     * @param int $tenantId
+     * @return bool
+     */
+    public static function hasTenantAccess(int $tenantId): bool {
+        if (!self::isAuthenticated()) {
+            return false;
+        }
+
+        // Admin has access to all tenants
+        if (self::isAdmin()) {
+            return true;
+        }
+
+        // Check available tenants
+        $availableTenants = self::getAvailableTenants();
+        if (!$availableTenants) {
+            return false;
+        }
+
+        foreach ($availableTenants as $tenant) {
+            if ($tenant['id'] == $tenantId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Ottiene informazioni di debug sulla sessione
      *
      * @return array
@@ -252,6 +338,9 @@ class SessionHelper {
             'is_authenticated' => self::isAuthenticated(),
             'is_admin' => self::isAdmin(),
             'user_data' => self::getCurrentUser(),
+            'current_tenant_id' => self::getCurrentTenantId(),
+            'available_tenants' => self::getAvailableTenants(),
+            'can_switch_tenant' => self::canSwitchTenant(),
             'session_data' => $_SESSION
         ];
     }
