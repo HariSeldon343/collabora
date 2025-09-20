@@ -355,7 +355,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
                     <a href="?action=test_login" class="btn success">Simula Login Admin</a>
                     <a href="index_v2.php" class="btn">Vai al Login Reale</a>
                     <?php else: ?>
-                    <a href="admin/index.php" class="btn">Prova Accesso Admin</a>
+                    <a href="<?php echo BASE_URL; ?>/admin/index.php" class="btn">Prova Accesso Admin</a>
                     <a href="home_v2.php" class="btn secondary">Vai alla Home</a>
                     <a href="?action=logout" class="btn secondary">Logout</a>
                     <?php endif; ?>
