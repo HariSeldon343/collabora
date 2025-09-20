@@ -92,4 +92,3 @@ if (typeof window !== 'undefined') {
 }
 
 // Export statement removed - using window.PostLoginConfig instead
-// export default PostLoginConfig;

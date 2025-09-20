@@ -1,9 +1,7 @@
 <?php
 session_start();
 require_once 'config_v2.php';
-require_once 'includes/autoload.php';
-
-use Collabora\Auth\SimpleAuth;
+require_once 'includes/SimpleAuth.php';
 
 // Check if user is logged in
 $auth = new SimpleAuth();

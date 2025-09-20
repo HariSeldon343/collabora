@@ -241,9 +241,3 @@ window.PostLoginHandler = {
 };
 
 // Export statement removed - using window.PostLoginHandler instead
-// export {
-//     validateRedirectTarget,
-//     postLoginNavigate,
-//     getRedirectTarget,
-//     handlePostLogin
-// };
