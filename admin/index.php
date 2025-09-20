@@ -1,6 +1,9 @@
 <?php
 require_once '../config_v2.php';
 require_once '../includes/autoload.php';
+
+// Define base URL without trailing slash for proper concatenation
+$baseUrl = rtrim(defined('BASE_URL') ? BASE_URL : '/Nexiosolution/collabora', '/');
 require_once '../includes/session_helper.php';
 require_once '../includes/auth_v2.php';
 require_once '../includes/db.php';
@@ -326,28 +329,28 @@ try {
                         </div>
                         <div class="card-body">
                             <div class="admin-quick-links">
-                                <a href="<?php echo BASE_URL; ?>/admin/users.php" class="quick-link-card">
+                                <a href="<?php echo $baseUrl . '/admin/users.php'; ?>" class="quick-link-card">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
                                     </svg>
                                     <h3>Aggiungi Utente</h3>
                                     <p>Crea nuovo account</p>
                                 </a>
-                                <a href="<?php echo BASE_URL; ?>/admin/tenants.php" class="quick-link-card">
+                                <a href="<?php echo $baseUrl . '/admin/tenants.php'; ?>" class="quick-link-card">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
                                     </svg>
                                     <h3>Nuovo Tenant</h3>
                                     <p>Aggiungi organizzazione</p>
                                 </a>
-                                <a href="<?php echo BASE_URL; ?>/admin/backup.php" class="quick-link-card">
+                                <a href="<?php echo $baseUrl . '/admin/backup.php'; ?>" class="quick-link-card">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
                                     </svg>
                                     <h3>Backup</h3>
                                     <p>Esegui backup sistema</p>
                                 </a>
-                                <a href="<?php echo BASE_URL; ?>/admin/settings.php" class="quick-link-card">
+                                <a href="<?php echo $baseUrl . '/admin/settings.php'; ?>" class="quick-link-card">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -376,7 +379,7 @@ try {
                 <div class="card" style="margin-top: 1.5rem;">
                     <div class="card-header">
                         <h2>Attività Recenti</h2>
-                        <a href="<?php echo BASE_URL; ?>/admin/logs.php" class="link-btn">Vedi tutti i log</a>
+                        <a href="<?php echo $baseUrl . '/admin/logs.php'; ?>" class="link-btn">Vedi tutti i log</a>
                     </div>
                     <div class="card-body">
                         <?php if (count($recentActivities) > 0): ?>
