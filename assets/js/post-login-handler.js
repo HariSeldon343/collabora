@@ -240,10 +240,10 @@ window.PostLoginHandler = {
     debugLog
 };
 
-// Also export for ES6 modules
-export {
-    validateRedirectTarget,
-    postLoginNavigate,
-    getRedirectTarget,
-    handlePostLogin
-};
+// Export statement removed - using window.PostLoginHandler instead
+// export {
+//     validateRedirectTarget,
+//     postLoginNavigate,
+//     getRedirectTarget,
+//     handlePostLogin
+// };

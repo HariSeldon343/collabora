@@ -3,7 +3,7 @@
  * Handles all file operations and API communications
  */
 
-export class FileManager {
+class FileManager {
   constructor(appState) {
     this.state = appState;
     // Use centralized APIConfig if available, otherwise fallback
@@ -796,4 +796,8 @@ export class FileManager {
 
     return filtered;
   }
+}
+// Export FileManager to window for non-module usage
+if (typeof window \!== 'undefined') {
+    window.FileManager = FileManager;
 }

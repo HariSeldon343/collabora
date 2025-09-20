@@ -1,18 +1,23 @@
 <?php
 session_start();
 require_once 'config_v2.php';
-require_once 'includes/auth_v2.php';
+require_once 'includes/autoload.php';
 
-// Check authentication
-if (!isset($_SESSION['user_v2']['id'])) {
-    header('Location: index_v2.php?action=login');
-    exit;
+use Collabora\Auth\SimpleAuth;
+
+// Check if user is logged in
+$auth = new SimpleAuth();
+if (!$auth->isAuthenticated()) {
+    header('Location: index_v2.php?next=' . urlencode($_SERVER['REQUEST_URI']));
+    exit();
 }
 
-$userRole = $_SESSION['user_v2']['role'] ?? 'standard_user';
-$userId = $_SESSION['user_v2']['id'];
-$currentTenantId = $_SESSION['current_tenant_id'] ?? null;
-$userName = $_SESSION['user_v2']['name'] ?? 'User';
+$user = $auth->getCurrentUser();
+$currentTenant = $auth->getCurrentTenant();
+$userRole = $user['role'] ?? 'standard_user';
+$userId = $user['id'];
+$currentTenantId = $currentTenant['id'] ?? null;
+$userName = $user['name'] ?? 'User';
 ?>
 <!DOCTYPE html>
 <html lang="it">

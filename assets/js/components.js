@@ -3,7 +3,7 @@
  * Reusable UI components (modals, toasts, etc.)
  */
 
-export class Components {
+class Components {
   constructor(appState) {
     this.state = appState;
     this.activeModals = new Set();

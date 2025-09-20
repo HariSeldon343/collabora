@@ -91,5 +91,5 @@ if (typeof window !== 'undefined') {
     window.PostLoginConfig = PostLoginConfig;
 }
 
-// Also export for ES6 modules
-export default PostLoginConfig;
+// Export statement removed - using window.PostLoginConfig instead
+// export default PostLoginConfig;

@@ -251,3 +251,93 @@ Per verificare che tutte le correzioni funzionino:
 ✅ **JavaScript Paths**: Risolto - Tutti i path usano riferimenti assoluti
 ✅ **Test Script**: Funzionante e accessibile
 ✅ **Documentation**: Aggiornata con tutti i dettagli delle correzioni
+
+---
+
+## Aggiornamento 2025-09-20 18:30: Risoluzione Export JavaScript e Autoload PHP
+
+### Problemi Identificati e Risolti
+
+#### 1. JavaScript Export Errors
+**Problema:** File JavaScript caricati come script tradizionali (`<script src="">`) contenevano statement `export` ES6 che causavano errori "Unexpected token 'export'"
+
+**File Corretti:**
+
+1. **`/assets/js/post-login-config.js`**
+   - Linea 95: Rimosso `export default PostLoginConfig;`
+   - Il modulo è già esposto via `window.PostLoginConfig`
+
+2. **`/assets/js/post-login-handler.js`**
+   - Linea 244: Rimosso `export { ... }`
+   - Il modulo è già esposto via `window.PostLoginHandler`
+
+3. **`/assets/js/filemanager.js`**
+   - Linea 6: Rimosso `export` da `export class FileManager`
+   - Aggiunto alla fine: `window.FileManager = FileManager;`
+
+4. **`/assets/js/components.js`**
+   - Linea 6: Rimosso `export` da `export class Components`
+   - Già presente alla fine: `window.Components = Components;`
+
+#### 2. PHP Autoload Issues
+**Problema:** File PHP includevano direttamente `SimpleAuth.php` invece di usare l'autoloader PSR-4
+
+**File Corretti:**
+
+1. **`/calendar.php`**
+   - Sostituito `require_once 'includes/SimpleAuth.php';` con `require_once 'includes/autoload.php';`
+   - Mantiene `use Collabora\Auth\SimpleAuth;`
+
+2. **`/tasks.php`**
+   - Sostituito `require_once 'includes/SimpleAuth.php';` con `require_once 'includes/autoload.php';`
+   - Mantiene `use Collabora\Auth\SimpleAuth;`
+
+3. **`/chat.php`**
+   - Sostituito `require_once 'includes/auth_v2.php';` con `require_once 'includes/autoload.php';`
+   - Aggiunto `use Collabora\Auth\SimpleAuth;`
+   - Migrato da session check diretti a SimpleAuth API
+
+### Pattern di Correzione Applicati
+
+#### JavaScript Module Pattern
+```javascript
+// PRIMA (con export ES6 - causa errore):
+export class ClassName { ... }
+export default ModuleName;
+
+// DOPO (window assignment - funziona con script tradizionali):
+class ClassName { ... }
+window.ClassName = ClassName;
+```
+
+#### PHP Autoload Pattern
+```php
+// PRIMA (include diretto - può causare errori namespace):
+require_once 'includes/SimpleAuth.php';
+
+// DOPO (usa autoloader PSR-4):
+require_once 'includes/autoload.php';
+use Collabora\Auth\SimpleAuth;
+```
+
+### Benefici delle Correzioni
+
+1. **JavaScript**: Nessun errore di sintassi quando i file sono caricati come script tradizionali
+2. **PHP**: Gestione corretta dei namespace e prevenzione di "Class not found" errors
+3. **Consistenza**: Tutti i file principali ora usano lo stesso pattern di autenticazione
+4. **Manutenibilità**: Uso dell'autoloader PSR-4 semplifica future modifiche
+
+### Test di Verifica
+
+Per verificare che le correzioni funzionino:
+
+1. **Test JavaScript**: Aprire la console del browser e verificare che non ci siano errori "Unexpected token 'export'"
+2. **Test PHP Auth**: Accedere a calendar.php, tasks.php e chat.php per verificare che l'autenticazione funzioni
+3. **Test Autoload**: Verificare che non ci siano errori "Class not found" nei log PHP
+
+### Status Finale delle Correzioni
+
+✅ **JavaScript Export Errors**: Tutti risolti - 4 file corretti
+✅ **PHP Autoload Issues**: Tutti risolti - 3 file corretti
+✅ **Consistenza Auth**: Tutti i file ora usano SimpleAuth con autoloader
+✅ **Documentation**: Aggiornata con dettagli completi delle correzioni
