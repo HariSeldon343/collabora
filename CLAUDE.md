@@ -382,3 +382,100 @@ curl -X POST http://localhost/Nexiosolution/collabora/api/tasks.php \
 - **Soft deletes** with audit trail
 - **Permission-based** calendar sharing
 - **Input validation** on all endpoints
+
+## Part 4 Features - Chat & Communication (ADDED 2025-01-20)
+
+### Real-Time Chat System
+The system now includes a comprehensive chat and communication module with long-polling support:
+
+#### Chat Features
+- **Multi-channel support**: Public, private, and direct message channels
+- **Real-time messaging**: Long-polling with 2-second intervals
+- **Message threading**: Reply to specific messages
+- **Emoji reactions**: Add reactions to messages (👍 ❤️ 😊 😂 🎉 🤔)
+- **@mentions**: Mention users with autocomplete and notifications
+- **File attachments**: Share files from the existing file manager
+- **User presence**: Online/away/offline/busy status tracking
+- **Typing indicators**: See when others are typing
+- **Read receipts**: Track read/unread messages with counts
+- **Message search**: Full-text search across messages
+
+#### Database Tables (11 total)
+```
+Chat Core:
+- chat_channels         # Channel containers
+- chat_channel_members  # Membership and roles
+- chat_messages        # Messages with threading
+- message_reactions    # Emoji reactions
+- message_mentions     # @mention tracking
+- message_reads        # Read status
+- chat_presence        # Online status
+
+Enhanced Features:
+- chat_typing_indicators  # Real-time typing
+- chat_pinned_messages   # Important messages
+- chat_analytics         # Usage statistics
+```
+
+### Chat API Endpoints
+
+#### Core APIs
+- `GET/POST /api/messages.php` - Message operations
+- `GET /api/chat-poll.php` - Long-polling for real-time updates
+- `GET/POST /api/presence.php` - User presence management
+- `GET/POST/PUT/DELETE /api/channels.php` - Channel CRUD
+- `GET/POST/DELETE /api/reactions.php` - Emoji reactions
+
+### Chat UI Components
+- `/chat.php` - Main chat interface with three-column layout
+- `/assets/js/chat.js` - ChatModule class for chat operations
+- `/assets/js/polling.js` - PollingManager for real-time updates
+- `/assets/css/chat.css` - Chat-specific styling
+
+### Chat Configuration
+- `/config/chat.config.php` - Chat settings and limits
+- Long-polling timeout: 30 seconds max
+- Message limit: 50 per load
+- File size limit: 10MB for attachments
+- Typing indicator timeout: 5 seconds
+- Presence timeout: 5 minutes
+
+### Long-Polling Implementation
+```javascript
+// Polling intervals and backoff
+- Base interval: 2 seconds
+- Error backoff: Exponential (2s, 4s, 8s... max 60s)
+- Tab visibility: Pause when hidden, resume when visible
+- Connection recovery: Automatic reconnection on failure
+```
+
+### Deployment & Testing
+```bash
+# Deploy chat module
+C:\xampp\htdocs\Nexiosolution\collabora\deploy_part4_chat.bat
+
+# Run chat tests
+php test_part4_chat.php
+
+# Access chat interface
+http://localhost/Nexiosolution/collabora/chat.php
+```
+
+### Chat Usage Examples
+
+#### Send Message
+```bash
+curl -X POST http://localhost/Nexiosolution/collabora/api/messages.php \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "channel_id": 1,
+    "content": "Hello @alice! Check this out 😊"
+  }'
+```
+
+#### Long-Poll for Updates
+```bash
+curl -X GET "http://localhost/Nexiosolution/collabora/api/chat-poll.php?last_message_id=100" \
+  -b cookies.txt
+```

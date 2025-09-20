@@ -21,9 +21,75 @@ Options -MultiViews
     RewriteRule . index_v2.php [L]
 </IfModule>
 
+# ========================================
+# CHAT MODULE CONFIGURATION - PART 4
+# ========================================
+
+# Long-polling and timeout settings for chat
+<IfModule mod_php.c>
+    php_value max_execution_time 60
+    php_value session.gc_maxlifetime 3600
+    php_value memory_limit 256M
+</IfModule>
+
+# CORS Configuration for Chat API
+<IfModule mod_headers.c>
+    # Chat-specific endpoints CORS
+    <FilesMatch "^(chat-poll|messages|channels|presence|reactions)\.php$">
+        Header set Access-Control-Allow-Origin "http://localhost"
+        Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+        Header set Access-Control-Allow-Credentials "true"
+        Header set Access-Control-Max-Age "3600"
+    </FilesMatch>
+
+    # Long-polling specific headers
+    <FilesMatch "chat-poll\.php$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+        Header set Connection "keep-alive"
+    </FilesMatch>
+</IfModule>
+
+# Cache static chat assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # Chat module static assets
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|ico)$">
+        ExpiresDefault "access plus 1 week"
+    </FilesMatch>
+
+    <FilesMatch "\.(css|js)$">
+        ExpiresDefault "access plus 1 day"
+    </FilesMatch>
+</IfModule>
+
+# Protect sensitive chat directories
+<FilesMatch "^(config/chat\.config\.php|logs/chat/.*|temp/chat/.*)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Rate limiting for chat API (if mod_ratelimit available)
+<IfModule mod_ratelimit.c>
+    <Location "/api/messages.php">
+        SetOutputFilter RATE_LIMIT
+        SetEnv rate-limit 100
+    </Location>
+</IfModule>
+
+# Keep-Alive settings for long-polling
+<IfModule mod_headers.c>
+    Header set Connection keep-alive
+</IfModule>
+
 # Sicurezza headers
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self';"
 </IfModule>
