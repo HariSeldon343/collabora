@@ -4,9 +4,9 @@
  * User Management API
  * Endpoint per la gestione utenti (admin only)
  *
- * Updated to use SimpleAuth for consistency
- * @version 2.1.0
- * @since 2025-01-21
+ * @author Nexiosolution
+ * @version 2.0.0
+ * @since 2025-01-17
  */
 
 // Avvia sessione se non già avviata
@@ -37,11 +37,13 @@ ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
 require_once __DIR__ . '/../config_v2.php';
+require_once __DIR__ . '/../includes/autoload.php';
 require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../includes/SimpleAuth.php';
+require_once __DIR__ . '/../includes/auth_v2.php';
 require_once __DIR__ . '/../includes/UserManager.php';
 require_once __DIR__ . '/../includes/TenantManager_v2.php';
 
+use Collabora\Auth\AuthenticationV2;
 use Collabora\Users\UserManager;
 use Collabora\Tenants\TenantManagerV2;
 
@@ -49,7 +51,7 @@ use Collabora\Tenants\TenantManagerV2;
  * Classe per gestire le richieste API utenti
  */
 class UsersAPI {
-    private SimpleAuth $auth;
+    private AuthenticationV2 $auth;
     private UserManager $userManager;
     private TenantManagerV2 $tenantManager;
     private array $request;
@@ -57,7 +59,7 @@ class UsersAPI {
     private array $urlParts;
 
     public function __construct() {
-        $this->auth = new SimpleAuth();
+        $this->auth = new AuthenticationV2();
         $this->userManager = new UserManager();
         $this->tenantManager = new TenantManagerV2();
         $this->method = $_SERVER['REQUEST_METHOD'];
@@ -88,15 +90,9 @@ class UsersAPI {
      */
     public function handle(): void {
         try {
-            // Verifica autenticazione usando SimpleAuth
+            // Verifica autenticazione
             if (!$this->auth->isAuthenticated()) {
                 $this->sendError('Non autenticato', 401);
-                return;
-            }
-
-            // Verifica che sia admin
-            if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
-                $this->sendError('Accesso negato: solo gli amministratori possono gestire gli utenti', 403);
                 return;
             }
 
@@ -616,12 +612,14 @@ class UsersAPI {
     }
 
     /**
-     * Valida token CSRF usando SimpleAuth
+     * Valida token CSRF
      */
     private function validateCSRF(): bool {
-        // Per ora, disabilita CSRF check per semplicità
-        // In produzione, implementare proper CSRF validation
-        return true;
+        $token = $this->request['csrf_token'] ??
+                 $_SERVER['HTTP_X_CSRF_TOKEN'] ??
+                 '';
+
+        return !empty($token) && $this->auth->validateCSRFToken($token);
     }
 
     /**

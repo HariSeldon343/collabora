@@ -315,6 +315,9 @@ class SimpleAuth {
 
             error_log('[SimpleAuth] Session configured with tenant_id: ' . $selectedTenantId);
 
+            // Store session in user_sessions table
+            $this->storeUserSession($user['id'], $selectedTenantId);
+
             // Return success response with tenant information
             return [
                 'success' => true,
@@ -344,7 +347,81 @@ class SimpleAuth {
         }
     }
 
+    /**
+     * Store user session in database
+     */
+    private function storeUserSession($userId, $tenantId) {
+        try {
+            $sessionId = session_id();
+            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+
+            // First, check if user_sessions table exists
+            $stmt = $this->db->query("
+                SELECT COUNT(*) as count
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                AND table_name = 'user_sessions'
+            ");
+            $result = $stmt->fetch();
+
+            if ($result['count'] == 0) {
+                // Create table if it doesn't exist
+                $this->db->exec("
+                    CREATE TABLE IF NOT EXISTS user_sessions (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT NOT NULL,
+                        session_id VARCHAR(255) NOT NULL,
+                        tenant_id INT NOT NULL,
+                        ip_address VARCHAR(45),
+                        user_agent TEXT,
+                        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                        FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+                        INDEX idx_session_id (session_id),
+                        INDEX idx_user_tenant (user_id, tenant_id),
+                        INDEX idx_last_activity (last_activity)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                ");
+            }
+
+            // Delete old sessions for this user
+            $stmt = $this->db->prepare("DELETE FROM user_sessions WHERE user_id = :user_id");
+            $stmt->execute(['user_id' => $userId]);
+
+            // Insert new session
+            $stmt = $this->db->prepare("
+                INSERT INTO user_sessions (user_id, session_id, tenant_id, ip_address, user_agent)
+                VALUES (:user_id, :session_id, :tenant_id, :ip_address, :user_agent)
+            ");
+            $stmt->execute([
+                'user_id' => $userId,
+                'session_id' => $sessionId,
+                'tenant_id' => $tenantId,
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent
+            ]);
+
+            error_log('[SimpleAuth] User session stored in database');
+
+        } catch (PDOException $e) {
+            // Log error but don't fail login if session table doesn't work
+            error_log('[SimpleAuth] Could not store user session: ' . $e->getMessage());
+        }
+    }
+
     public function logout() {
+        // Remove session from database
+        if (isset($_SESSION['user_id'])) {
+            try {
+                $stmt = $this->db->prepare("DELETE FROM user_sessions WHERE user_id = :user_id");
+                $stmt->execute(['user_id' => $_SESSION['user_id']]);
+            } catch (PDOException $e) {
+                error_log('[SimpleAuth] Could not remove user session: ' . $e->getMessage());
+            }
+        }
+
         session_destroy();
         return ['success' => true, 'message' => 'Logout effettuato con successo'];
     }

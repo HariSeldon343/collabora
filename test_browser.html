@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Nexiosolution Collabora</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #111827;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #2563eb;
+        }
+        .success {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .error {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .instructions {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test API Nexiosolution Collabora</h1>
+
+        <div class="instructions">
+            <strong>⚠️ Istruzioni:</strong>
+            <ol>
+                <li>Prima fai il login con le credenziali admin</li>
+                <li>Poi testa le singole API</li>
+                <li>Ogni test mostra il risultato nella sezione sottostante</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h2>1. Login</h2>
+            <p>Email: asamodeo@fortibyte.it | Password: Ricord@1991</p>
+            <button onclick="testLogin()">🔐 Test Login</button>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test API Endpoints</h2>
+            <button onclick="testAPI('calendars')">📅 Test Calendars</button>
+            <button onclick="testAPI('events')">📆 Test Events</button>
+            <button onclick="testAPI('task-lists')">✅ Test Task Lists</button>
+            <button onclick="testAPI('channels')">💬 Test Channels</button>
+            <button onclick="testAPI('messages', '?action=get_last_id')">📩 Test Messages</button>
+            <button onclick="testAPI('users')">👥 Test Users</button>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test All</h2>
+            <button onclick="testAll()">🚀 Test Tutti gli Endpoint</button>
+        </div>
+
+        <div id="results" class="results">
+            I risultati dei test appariranno qui...
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = '/Nexiosolution/collabora/api';
+        const resultsDiv = document.getElementById('results');
+
+        function log(message, isError = false) {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = isError ? '❌' : '✅';
+            resultsDiv.innerHTML += `[${timestamp}] ${prefix} ${message}\n`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        async function testLogin() {
+            resultsDiv.innerHTML = 'Testing login...\n';
+
+            try {
+                const response = await fetch(`${baseUrl}/auth_simple.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'login',
+                        email: 'asamodeo@fortibyte.it',
+                        password: 'Ricord@1991'
+                    }),
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    log(`Login successful! User: ${data.user?.email || 'N/A'}`);
+                    log(`Role: ${data.user?.role || 'N/A'}`);
+                    log(`Tenant: ${data.tenant?.name || 'N/A'}`);
+                } else {
+                    log(`Login failed: ${data.message || 'Unknown error'}`, true);
+                }
+            } catch (error) {
+                log(`Login error: ${error.message}`, true);
+            }
+        }
+
+        async function testAPI(endpoint, params = '') {
+            log(`\nTesting ${endpoint}...`);
+
+            try {
+                const response = await fetch(`${baseUrl}/${endpoint}.php${params}`, {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+
+                const text = await response.text();
+                let data;
+
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    data = text;
+                }
+
+                if (response.ok) {
+                    log(`${endpoint} API: HTTP ${response.status} OK`);
+
+                    if (typeof data === 'object') {
+                        log(`Response: ${JSON.stringify(data, null, 2)}`);
+                    } else {
+                        log(`Response: ${text.substring(0, 200)}...`);
+                    }
+                } else {
+                    log(`${endpoint} API: HTTP ${response.status} Error`, true);
+
+                    if (typeof data === 'object' && data.message) {
+                        log(`Error: ${data.message}`, true);
+                    } else {
+                        log(`Response: ${text.substring(0, 200)}...`, true);
+                    }
+                }
+            } catch (error) {
+                log(`${endpoint} error: ${error.message}`, true);
+            }
+        }
+
+        async function testAll() {
+            resultsDiv.innerHTML = 'Starting complete test suite...\n\n';
+
+            // First login
+            await testLogin();
+
+            // Wait a bit for session to establish
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Test all endpoints
+            const endpoints = [
+                ['calendars', ''],
+                ['events', ''],
+                ['task-lists', ''],
+                ['channels', ''],
+                ['messages', '?action=get_last_id'],
+                ['users', '']
+            ];
+
+            for (const [endpoint, params] of endpoints) {
+                await testAPI(endpoint, params);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            log('\n=== Test Complete ===');
+        }
+    </script>
+</body>
+</html>

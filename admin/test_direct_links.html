@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Link Diretti Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #111827;
+        }
+        .test-links {
+            margin: 20px 0;
+        }
+        .test-links a {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px 30px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .test-links a:hover {
+            background: #1d4ed8;
+        }
+        .info {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background: #f3f4f6;
+        }
+        .success { color: #10b981; font-weight: bold; }
+        .error { color: #ef4444; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Link Diretti dalla Directory Admin</h1>
+
+        <div class="info">
+            <strong>Posizione attuale:</strong> /admin/test_direct_links.html<br>
+            <strong>Obiettivo:</strong> Verificare che i link funzionino dalla directory admin
+        </div>
+
+        <h2>1. Link con Path Assoluti (Corretti)</h2>
+        <div class="test-links">
+            <a href="http://localhost/Nexiosolution/collabora/calendar.php">📅 Calendar (URL Completo)</a>
+            <a href="http://localhost/Nexiosolution/collabora/tasks.php">✅ Tasks (URL Completo)</a>
+            <a href="http://localhost/Nexiosolution/collabora/chat.php">💬 Chat (URL Completo)</a>
+        </div>
+
+        <h2>2. Link con Path dal Root</h2>
+        <div class="test-links">
+            <a href="/Nexiosolution/collabora/calendar.php">📅 Calendar (Path dal Root)</a>
+            <a href="/Nexiosolution/collabora/tasks.php">✅ Tasks (Path dal Root)</a>
+            <a href="/Nexiosolution/collabora/chat.php">💬 Chat (Path dal Root)</a>
+        </div>
+
+        <h2>3. Link Relativi (Non funzioneranno)</h2>
+        <div class="test-links">
+            <a href="calendar.php">📅 Calendar (Relativo - ERRORE)</a>
+            <a href="tasks.php">✅ Tasks (Relativo - ERRORE)</a>
+            <a href="chat.php">💬 Chat (Relativo - ERRORE)</a>
+        </div>
+
+        <h2>4. Link con ../ (Per uscire da admin)</h2>
+        <div class="test-links">
+            <a href="../calendar.php">📅 Calendar (../)</a>
+            <a href="../tasks.php">✅ Tasks (../)</a>
+            <a href="../chat.php">💬 Chat (../)</a>
+        </div>
+
+        <table>
+            <tr>
+                <th>Tipo Link</th>
+                <th>Esempio</th>
+                <th>Funziona da /admin?</th>
+                <th>Perché</th>
+            </tr>
+            <tr>
+                <td>URL Completo</td>
+                <td>http://localhost/.../calendar.php</td>
+                <td class="success">✅ SI</td>
+                <td>URL assoluto, funziona sempre</td>
+            </tr>
+            <tr>
+                <td>Path dal Root</td>
+                <td>/Nexiosolution/.../calendar.php</td>
+                <td class="success">✅ SI</td>
+                <td>Path assoluto dal root del server</td>
+            </tr>
+            <tr>
+                <td>Relativo</td>
+                <td>calendar.php</td>
+                <td class="error">❌ NO</td>
+                <td>Cerca in /admin/calendar.php</td>
+            </tr>
+            <tr>
+                <td>Parent Directory</td>
+                <td>../calendar.php</td>
+                <td class="success">✅ SI</td>
+                <td>Sale di una directory (da /admin a /)</td>
+            </tr>
+        </table>
+
+        <div class="info">
+            <strong>Conclusione:</strong> La sidebar deve generare link con URL completi (http://...) o path assoluti (/Nexiosolution/...) per funzionare correttamente da qualsiasi directory.
+        </div>
+
+        <h2>5. Test JavaScript Console</h2>
+        <div>
+            <button onclick="testLinks()">Test Tutti i Link</button>
+            <pre id="results"></pre>
+        </div>
+    </div>
+
+    <script>
+        function testLinks() {
+            const links = document.querySelectorAll('a');
+            const results = document.getElementById('results');
+            let output = 'LINK TROVATI NELLA PAGINA:\n\n';
+
+            links.forEach((link, i) => {
+                output += `${i+1}. ${link.textContent.trim()}\n`;
+                output += `   HREF: ${link.href}\n`;
+                output += `   Resolved: ${new URL(link.href, window.location).href}\n\n`;
+            });
+
+            results.textContent = output;
+        }
+    </script>
+</body>
+</html>

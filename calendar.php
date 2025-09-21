@@ -234,6 +234,7 @@ $currentTenant = $auth->getCurrentTenant();
         </button>
     </div>
 
+    <script src="assets/js/navigation-helper.js"></script>
     <script src="assets/js/calendar.js"></script>
 </body>
 </html>

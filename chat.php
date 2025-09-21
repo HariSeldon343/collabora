@@ -307,5 +307,6 @@ $userName = $user['name'] ?? 'User';
             });
         });
     </script>
+    <script src="assets/js/navigation-helper.js"></script>
 </body>
 </html>

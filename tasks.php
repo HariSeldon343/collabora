@@ -394,6 +394,7 @@ $currentTenant = $auth->getCurrentTenant();
         <button class="btn btn-secondary btn-sm" onclick="clearFilters()">Pulisci</button>
     </div>
 
+    <script src="assets/js/navigation-helper.js"></script>
     <script src="assets/js/tasks.js"></script>
 </body>
 </html>

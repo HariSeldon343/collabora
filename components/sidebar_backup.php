@@ -1,20 +1,6 @@
 <?php
-// Definisce la base URL per i link assoluti
-// BASE_URL può essere completa (http://localhost/path) o solo il path (/path)
-if (defined('BASE_URL')) {
-    // Se BASE_URL contiene http:// o https://, è completa
-    if (strpos(BASE_URL, 'http://') === 0 || strpos(BASE_URL, 'https://') === 0) {
-        $base_url = rtrim(BASE_URL, '/');
-    } else {
-        // Se è solo un path, usiamo come prima
-        $base_url = rtrim(BASE_URL, '/');
-    }
-} elseif (defined('APP_URL')) {
-    $base_url = rtrim(APP_URL, '/');
-} else {
-    // Fallback: usa il path assoluto di default
-    $base_url = '/Nexiosolution/collabora';
-}
+// Definisce la base URL per i link assoluti, rimuovendo eventuali slash finali
+$base_url = rtrim(defined('BASE_URL') ? BASE_URL : (defined('APP_URL') ? APP_URL : '/Nexiosolution/collabora'), '/');
 
 // Get current page for active menu highlighting
 $currentPage = basename($_SERVER['PHP_SELF']);
