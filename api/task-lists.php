@@ -5,6 +5,11 @@
  * Supporta board kanban, liste e viste personalizzate
  */
 
+// Avvia sessione se non già avviata
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Abilita CORS e headers
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
@@ -17,18 +22,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// Error reporting per debugging
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
 // Carica configurazione e dipendenze
 require_once __DIR__ . '/../config_v2.php';
+require_once __DIR__ . '/../includes/autoload.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/SimpleAuth.php';
-require_once __DIR__ . '/../includes/session_helper.php';
 require_once __DIR__ . '/../includes/TaskManager.php';
 
-use Collabora\Session\SessionHelper;
 use Collabora\Tasks\TaskManager;
-
-// Inizializza sessione
-SessionHelper::init();
 
 // Funzione per inviare risposta JSON
 function sendResponse(array $data, int $httpCode = 200): void {
@@ -46,21 +52,21 @@ function sendError(string $message, int $httpCode = 400, array $extra = []): voi
     sendResponse($response, $httpCode);
 }
 
-// Verifica autenticazione
-if (!SessionHelper::isAuthenticated()) {
-    sendError('Non autenticato', 401);
-}
-
-// Ottieni dati utente dalla sessione
-$currentUser = SessionHelper::getCurrentUser();
-$tenantId = $_SESSION['current_tenant_id'] ?? 0;
-$userId = $currentUser['id'] ?? 0;
-
-if (!$tenantId || !$userId) {
-    sendError('Sessione non valida', 401);
-}
-
 try {
+    // Verifica autenticazione usando SimpleAuth
+    $auth = new SimpleAuth();
+    if (!$auth->isAuthenticated()) {
+        sendError('Non autenticato', 401);
+    }
+
+    // Ottieni dati utente dalla sessione
+    $currentUser = $auth->getCurrentUser();
+    $tenantId = $_SESSION['current_tenant_id'] ?? 0;
+    $userId = $_SESSION['user_id'] ?? 0;
+
+    if (!$tenantId || !$userId) {
+        sendError('Sessione non valida', 401);
+    }
     // Inizializza connessione database e manager
     $db = getDbConnection();
     $taskManager = new TaskManager($db, $tenantId, $userId);

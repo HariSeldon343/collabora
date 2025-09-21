@@ -23,17 +23,21 @@ $currentTenant = $auth->getCurrentTenant();
     <link rel="stylesheet" href="assets/css/calendar.css">
 </head>
 <body>
-    <div class="app-container">
+    <div class="app-layout">
         <?php include 'components/sidebar.php'; ?>
 
-        <div class="main-content">
+        <div class="main-wrapper">
             <?php include 'components/header.php'; ?>
 
-            <div class="content-area">
+            <main class="main-content">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1 class="page-title">Calendario</h1>
+                </div>
+
                 <!-- Calendar Header -->
                 <div class="calendar-header">
                     <div class="header-left">
-                        <h1 class="page-title">Calendario</h1>
                         <button id="createEventBtn" class="btn btn-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -99,7 +103,7 @@ $currentTenant = $auth->getCurrentTenant();
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 

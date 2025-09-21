@@ -9,6 +9,11 @@
  * @since 2025-01-17
  */
 
+// Avvia sessione se non già avviata
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
@@ -26,6 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Credentials: true');
 
+// Error reporting per debugging
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
+require_once __DIR__ . '/../config_v2.php';
+require_once __DIR__ . '/../includes/autoload.php';
+require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth_v2.php';
 require_once __DIR__ . '/../includes/UserManager.php';
 require_once __DIR__ . '/../includes/TenantManager_v2.php';

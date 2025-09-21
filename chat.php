@@ -22,21 +22,29 @@ $userName = $user['name'] ?? 'User';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat - Nexio Solution V2</title>
+    <title>Chat - Nexio Solution</title>
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/chat.css">
 </head>
 <body>
-    <!-- Sidebar -->
-    <?php include 'components/sidebar.php'; ?>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <?php include 'components/sidebar.php'; ?>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Header -->
-        <?php include 'components/header.php'; ?>
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            <!-- Header -->
+            <?php include 'components/header.php'; ?>
 
-        <!-- Chat Container -->
-        <div class="chat-container">
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1 class="page-title">Chat</h1>
+                </div>
+
+                <!-- Chat Container -->
+                <div class="chat-container">
             <!-- Channels Sidebar -->
             <div class="channels-sidebar" id="channelsSidebar">
                 <div class="channels-header">
@@ -189,6 +197,8 @@ $userName = $user['name'] ?? 'User';
                     <!-- Members will be loaded dynamically -->
                 </div>
             </div>
+                </div>
+            </main>
         </div>
     </div>
 

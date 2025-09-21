@@ -5,7 +5,11 @@
  * Handles message listing and sending
  */
 
-session_start();
+// Avvia sessione se non già avviata
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -17,9 +21,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// Error reporting per debugging
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
 // Include required files
-require_once '../includes/SimpleAuth.php';
-require_once '../includes/ChatManager.php';
+require_once __DIR__ . '/../config_v2.php';
+require_once __DIR__ . '/../includes/autoload.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/SimpleAuth.php';
+require_once __DIR__ . '/../includes/ChatManager.php';
 
 // Initialize authentication
 $auth = new SimpleAuth();
@@ -54,21 +66,29 @@ $chatManager = new ChatManager($current_tenant['id'], $current_user['id']);
 $method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    switch ($method) {
-        case 'GET':
-            handleGetMessages();
-            break;
-        case 'POST':
-            handleSendMessage();
-            break;
-        default:
-            http_response_code(405);
-            echo json_encode([
-                'success' => false,
-                'error' => 'method_not_allowed',
-                'message' => 'Method not allowed'
-            ]);
-            break;
+    // Check for action parameter
+    $action = $_GET['action'] ?? null;
+
+    // Handle get_last_id action
+    if ($action === 'get_last_id') {
+        handleGetLastMessageId();
+    } else {
+        switch ($method) {
+            case 'GET':
+                handleGetMessages();
+                break;
+            case 'POST':
+                handleSendMessage();
+                break;
+            default:
+                http_response_code(405);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'method_not_allowed',
+                    'message' => 'Method not allowed'
+                ]);
+                break;
+        }
     }
 } catch (Exception $e) {
     error_log("Messages API Error: " . $e->getMessage());
@@ -232,6 +252,72 @@ function handleSendMessage() {
             'success' => false,
             'error' => 'send_failed',
             'message' => 'Failed to send message'
+        ]);
+    }
+}
+
+/**
+ * Handle get_last_id action - Get the last message ID for a channel or globally
+ */
+function handleGetLastMessageId() {
+    global $chatManager, $current_user;
+
+    // Get parameters
+    $channel_id = isset($_GET['channel_id']) ? (int)$_GET['channel_id'] : null;
+
+    try {
+        $db = getDbConnection();
+
+        // If channel_id is provided, get last message ID for that channel
+        if ($channel_id) {
+            // Verify user is member of channel
+            $membership = $chatManager->isChannelMember($channel_id, $current_user['id']);
+            if (!$membership && $current_user['role'] !== 'admin') {
+                http_response_code(403);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'not_member',
+                    'message' => 'You are not a member of this channel'
+                ]);
+                return;
+            }
+
+            $stmt = $db->prepare("
+                SELECT MAX(id) as last_id
+                FROM chat_messages
+                WHERE channel_id = :channel_id
+            ");
+            $stmt->execute(['channel_id' => $channel_id]);
+        } else {
+            // Get last message ID for all channels user has access to
+            $stmt = $db->prepare("
+                SELECT MAX(cm.id) as last_id
+                FROM chat_messages cm
+                INNER JOIN chat_channel_members ccm ON cm.channel_id = ccm.channel_id
+                WHERE ccm.user_id = :user_id
+            ");
+            $stmt->execute(['user_id' => $current_user['id']]);
+        }
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $lastId = $result['last_id'] ?? 0;
+
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'last_message_id' => (int)$lastId,
+                'channel_id' => $channel_id
+            ],
+            'message' => 'Last message ID retrieved successfully'
+        ]);
+
+    } catch (Exception $e) {
+        error_log("Get Last Message ID Error: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'server_error',
+            'message' => 'Failed to get last message ID'
         ]);
     }
 }

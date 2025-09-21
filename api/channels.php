@@ -5,7 +5,11 @@
  * Manages chat channels and membership
  */
 
-session_start();
+// Avvia sessione se non già avviata
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -17,10 +21,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// Error reporting per debugging
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
 // Include required files
-require_once '../includes/SimpleAuth.php';
-require_once '../includes/ChatManager.php';
-require_once '../includes/db.php';
+require_once __DIR__ . '/../config_v2.php';
+require_once __DIR__ . '/../includes/autoload.php';
+require_once __DIR__ . '/../includes/SimpleAuth.php';
+require_once __DIR__ . '/../includes/ChatManager.php';
+require_once __DIR__ . '/../includes/db.php';
 
 // Initialize authentication
 $auth = new SimpleAuth();

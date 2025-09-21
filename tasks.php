@@ -23,17 +23,21 @@ $currentTenant = $auth->getCurrentTenant();
     <link rel="stylesheet" href="assets/css/tasks.css">
 </head>
 <body>
-    <div class="app-container">
+    <div class="app-layout">
         <?php include 'components/sidebar.php'; ?>
 
-        <div class="main-content">
+        <div class="main-wrapper">
             <?php include 'components/header.php'; ?>
 
-            <div class="content-area">
+            <main class="main-content">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1 class="page-title">Gestione Attività</h1>
+                </div>
+
                 <!-- Tasks Header -->
                 <div class="tasks-header">
                     <div class="header-left">
-                        <h1 class="page-title">Gestione Attività</h1>
                         <div class="board-selector">
                             <select id="boardSelector" class="board-select">
                                 <!-- Boards will be loaded dynamically -->
@@ -154,7 +158,7 @@ $currentTenant = $auth->getCurrentTenant();
                 <div id="listContainer" class="list-container" style="display: none;">
                     <!-- List will be rendered here -->
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 
