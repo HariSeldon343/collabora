@@ -1,5 +1,4 @@
 <?php
-session_start();
 require_once 'config_v2.php';
 require_once 'includes/SimpleAuth.php';
 
