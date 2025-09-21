@@ -44,6 +44,7 @@ spl_autoload_register(function ($class) {
         'Collabora\\Auth\\AuthenticationV2' => __DIR__ . '/auth_v2.php',
         'Collabora\\Auth\\UserRole' => __DIR__ . '/auth_v2.php',
         'Collabora\\Auth\\UserStatus' => __DIR__ . '/auth_v2.php',
+        'Collabora\\Auth\\SimpleAuth' => __DIR__ . '/SimpleAuth.php',
     ];
 
     if (isset($classMap[$class])) {

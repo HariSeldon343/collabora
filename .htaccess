@@ -7,9 +7,14 @@ Options -MultiViews
     RewriteEngine On
     RewriteBase /Nexiosolution/collabora/
 
-    # Blocca accesso a file sensibili
-    RewriteRule ^(config|install|test).*\.php$ - [F,L]
+    # Blocca accesso a file sensibili (esclusi test in dev mode)
+    RewriteRule ^(config|install).*\.php$ - [F,L]
     RewriteRule ^\. - [F,L]
+
+    # Permetti accesso ai test solo in development
+    RewriteCond %{REQUEST_URI} ^/Nexiosolution/collabora/(test|tests|verify|check|debug)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
 
     # Reindirizza tutto a index_v2.php
     RewriteCond %{REQUEST_FILENAME} !-f

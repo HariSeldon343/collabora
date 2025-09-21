@@ -18,14 +18,16 @@ if (!window.ErrorHandler) {
 if (!window.PostLoginConfig) {
     const configScript = document.createElement('script');
     // Use absolute path to prevent issues when loaded from admin pages
-    configScript.src = '/Nexiosolution/collabora/assets/js/post-login-config.js';
+    // Add cache-busting parameter to ensure latest version is loaded
+    configScript.src = '/Nexiosolution/collabora/assets/js/post-login-config.js?v=' + Date.now();
     document.head.appendChild(configScript);
 }
 
 if (!window.PostLoginHandler) {
     const handlerScript = document.createElement('script');
     // Use absolute path to prevent issues when loaded from admin pages
-    handlerScript.src = '/Nexiosolution/collabora/assets/js/post-login-handler.js';
+    // Add cache-busting parameter to ensure latest version is loaded
+    handlerScript.src = '/Nexiosolution/collabora/assets/js/post-login-handler.js?v=' + Date.now();
     document.head.appendChild(handlerScript);
 }
 

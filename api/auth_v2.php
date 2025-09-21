@@ -41,52 +41,50 @@ if (file_exists(__DIR__ . '/../includes/autoload.php')) {
 
 use Collabora\Auth\AuthenticationV2;
 
-// Check if TenantManagerV2 exists, otherwise create a stub
+// Check if TenantManagerV2 exists, otherwise create a simple version
 if (!class_exists('Collabora\Tenants\TenantManagerV2')) {
-    // Create stub TenantManagerV2 class if it doesn't exist
-    namespace Collabora\Tenants {
-        class TenantManagerV2 {
-            private $db;
+    // Create basic TenantManagerV2 class
+    class TenantManagerV2 {
+        private $db;
 
-            public function __construct() {
-                $this->db = \getDbConnection();
+        public function __construct() {
+            $this->db = getDbConnection();
+        }
+
+        public function getUserAvailableTenants() {
+            if (!isset($_SESSION['user_id'])) {
+                return [];
             }
 
-            public function getUserAvailableTenants() {
-                if (!isset($_SESSION['user_id'])) {
-                    return [];
-                }
+            try {
+                $stmt = $this->db->prepare("
+                    SELECT DISTINCT t.*
+                    FROM tenants t
+                    LEFT JOIN user_tenant_associations uta ON t.id = uta.tenant_id
+                    WHERE uta.user_id = :user_id OR :is_admin = 1
+                    ORDER BY t.name
+                ");
 
-                try {
-                    $stmt = $this->db->prepare("
-                        SELECT DISTINCT t.*
-                        FROM tenants t
-                        LEFT JOIN user_tenant_associations uta ON t.id = uta.tenant_id
-                        WHERE uta.user_id = :user_id OR :is_admin = 1
-                        ORDER BY t.name
-                    ");
+                $stmt->execute([
+                    'user_id' => $_SESSION['user_id'],
+                    'is_admin' => $_SESSION['role'] === 'admin' ? 1 : 0
+                ]);
 
-                    $stmt->execute([
-                        'user_id' => $_SESSION['user_id'],
-                        'is_admin' => $_SESSION['role'] === 'admin' ? 1 : 0
-                    ]);
-
-                    return $stmt->fetchAll(\PDO::FETCH_ASSOC);
-                } catch (\Exception $e) {
-                    error_log("Error getting user tenants: " . $e->getMessage());
-                    return [];
-                }
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Exception $e) {
+                error_log("Error getting user tenants: " . $e->getMessage());
+                return [];
             }
+        }
 
-            public function getTenantById($id) {
-                try {
-                    $stmt = $this->db->prepare("SELECT * FROM tenants WHERE id = :id");
-                    $stmt->execute(['id' => $id]);
-                    return $stmt->fetch(\PDO::FETCH_ASSOC);
-                } catch (\Exception $e) {
-                    error_log("Error getting tenant: " . $e->getMessage());
-                    return null;
-                }
+        public function getTenantById($id) {
+            try {
+                $stmt = $this->db->prepare("SELECT * FROM tenants WHERE id = :id");
+                $stmt->execute(['id' => $id]);
+                return $stmt->fetch(PDO::FETCH_ASSOC);
+            } catch (Exception $e) {
+                error_log("Error getting tenant: " . $e->getMessage());
+                return null;
             }
         }
     }

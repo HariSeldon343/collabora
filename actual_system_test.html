@@ -1,0 +1,114 @@
+PHP Warning:  Module "openssl" is already loaded in Unknown on line 0
+PHP Warning:  Module "pdo_mysql" is already loaded in Unknown on line 0
+PHP Warning:  Module "mbstring" is already loaded in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'bcmath' (tried: C:\xampp\php\ext\bcmath (Impossibile trovare il modulo specificato), C:\xampp\php\ext\php_bcmath.dll (Impossibile trovare il modulo specificato)) in Unknown on line 0
+PHP Warning:  Module "fileinfo" is already loaded in Unknown on line 0
+PHP Warning:  Module "curl" is already loaded in Unknown on line 0
+PHP Warning:  Module "zip" is already loaded in Unknown on line 0
+PHP Warning:  Module "gd" is already loaded in Unknown on line 0
+
+Warning: Module "openssl" is already loaded in Unknown on line 0
+
+Warning: Module "pdo_mysql" is already loaded in Unknown on line 0
+
+Warning: Module "mbstring" is already loaded in Unknown on line 0
+
+Warning: PHP Startup: Unable to load dynamic library 'bcmath' (tried: C:\xampp\php\ext\bcmath (Impossibile trovare il modulo specificato), C:\xampp\php\ext\php_bcmath.dll (Impossibile trovare il modulo specificato)) in Unknown on line 0
+
+Warning: Module "fileinfo" is already loaded in Unknown on line 0
+
+Warning: Module "curl" is already loaded in Unknown on line 0
+
+Warning: Module "zip" is already loaded in Unknown on line 0
+
+Warning: Module "gd" is already loaded in Unknown on line 0
+<h1>🔍 Nexio Collabora - System Test (Actual Files)</h1>
+<p><strong>Testing Time:</strong> 2025-09-20 20:17:28</p>
+<h2>🗄️ Database & Authentication</h2>
+✅ Database connection: OK<br>
+[SimpleAuth] Login attempt for email: asamodeo@fortibyte.it
+[SimpleAuth] Password verified for user: 1
+[SimpleAuth] User is admin - fetching all active tenants
+[SimpleAuth] Found 2 accessible tenants
+✅ Admin login: OK<br>
+[SimpleAuth] Session configured with tenant_id: 1
+<h2>📄 Core Pages</h2>
+✅ index_v2.php: Valid syntax<br>
+✅ dashboard.php: Valid syntax<br>
+✅ calendar.php: Valid syntax<br>
+✅ tasks.php: Valid syntax<br>
+✅ chat.php: Valid syntax<br>
+<h2>👑 Admin Panel</h2>
+✅ admin/index.php: Valid syntax<br>
+✅ admin/users.php: Valid syntax<br>
+✅ admin/tenants.php: Valid syntax<br>
+<h2>🟨 JavaScript Files</h2>
+✅ assets/js/auth_v2.js: No export issues<br>
+   ℹ️ Uses window assignment pattern (correct)<br>
+✅ assets/js/calendar.js: No export issues<br>
+✅ assets/js/chat.js: No export issues<br>
+✅ assets/js/components.js: No export issues<br>
+   ℹ️ Uses window assignment pattern (correct)<br>
+✅ assets/js/filemanager.js: No export issues<br>
+   ℹ️ Uses window assignment pattern (correct)<br>
+<h2>🔌 API Endpoints</h2>
+✅ auth.php: Valid syntax<br>
+✅ auth_debug.php: Valid syntax<br>
+✅ auth_simple.php: Valid syntax<br>
+❌ auth_v2.php: Syntax error<br>
+✅ calendars.php: Valid syntax<br>
+✅ channels.php: Valid syntax<br>
+✅ chat-poll.php: Valid syntax<br>
+✅ events.php: Valid syntax<br>
+✅ files.php: Valid syntax<br>
+✅ folders.php: Valid syntax<br>
+✅ me.php: Valid syntax<br>
+✅ messages.php: Valid syntax<br>
+✅ presence.php: Valid syntax<br>
+✅ reactions.php: Valid syntax<br>
+✅ switch-tenant.php: Valid syntax<br>
+✅ task-lists.php: Valid syntax<br>
+✅ tasks.php: Valid syntax<br>
+✅ tenants.php: Valid syntax<br>
+✅ test_auth_direct.php: Valid syntax<br>
+✅ user-tenants.php: Valid syntax<br>
+✅ users.php: Valid syntax<br>
+✅ webdav.php: Valid syntax<br>
+✅ webhooks.php: Valid syntax<br>
+<h2>🔗 URL Patterns</h2>
+✅ admin/index.php: Correct URL pattern<br>
+✅ dashboard.php: Correct URL pattern<br>
+✅ components/sidebar.php: Correct URL pattern<br>
+<h2>🏗️ Database Tables</h2>
+✅ users: Table exists<br>
+✅ tenants: Table exists<br>
+✅ calendars: Table exists<br>
+✅ events: Table exists<br>
+✅ tasks: Table exists<br>
+✅ chat_channels: Table exists<br>
+✅ chat_messages: Table exists<br>
+<h2>🌐 Manual Access Test</h2>
+<p><strong>Test these URLs manually:</strong></p>
+<ul>
+<li><a href='http://localhost/Nexiosolution/collabora/index_v2.php' target='_blank'>http://localhost/Nexiosolution/collabora/index_v2.php</a> - Login page</li>
+<li><a href='http://localhost/Nexiosolution/collabora/dashboard.php' target='_blank'>http://localhost/Nexiosolution/collabora/dashboard.php</a> - Dashboard (requires login)</li>
+<li><a href='http://localhost/Nexiosolution/collabora/calendar.php' target='_blank'>http://localhost/Nexiosolution/collabora/calendar.php</a> - Calendar (requires login)</li>
+<li><a href='http://localhost/Nexiosolution/collabora/tasks.php' target='_blank'>http://localhost/Nexiosolution/collabora/tasks.php</a> - Tasks (requires login)</li>
+<li><a href='http://localhost/Nexiosolution/collabora/chat.php' target='_blank'>http://localhost/Nexiosolution/collabora/chat.php</a> - Chat (requires login)</li>
+<li><a href='http://localhost/Nexiosolution/collabora/admin/index.php' target='_blank'>http://localhost/Nexiosolution/collabora/admin/index.php</a> - Admin panel (requires admin login)</li>
+</ul>
+<h2>📊 Test Summary</h2>
+<p><strong>Tests Run:</strong> 48</p>
+<p><strong>Passed:</strong> 47</p>
+<p><strong>Failed:</strong> 1</p>
+<p><strong>Pass Rate:</strong> 97.9%</p>
+<p style='color: green; font-size: 18px;'><strong>✅ SYSTEM STATUS: GOOD</strong></p>
+<h2>🎯 Next Steps</h2>
+<ol>
+<li><strong>Login Test:</strong> Visit http://localhost/Nexiosolution/collabora/index_v2.php and login with admin@fortibyte.it / Ricord@1991</li>
+<li><strong>Navigation Test:</strong> After login, navigate to Dashboard, Calendar, Tasks, and Chat</li>
+<li><strong>Admin Test:</strong> Access admin panel and check user management</li>
+<li><strong>Console Check:</strong> Open browser Developer Tools and check for JavaScript errors</li>
+<li><strong>Network Check:</strong> Check Network tab for 404 errors on assets</li>
+</ol>
+<p><em>Generated: 2025-09-20 20:17:28</em></p>
