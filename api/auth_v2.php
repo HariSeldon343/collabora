@@ -9,6 +9,9 @@
  * @since 2025-01-17
  */
 
+// Include configurazione PRIMA di qualsiasi header o output
+require_once __DIR__ . '/../config_v2.php';
+
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
@@ -25,9 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Credentials: true');
-
-// Include configurazione e connessione database
-require_once __DIR__ . '/../config_v2.php';
 
 // Check if autoloader exists, otherwise include files directly
 if (file_exists(__DIR__ . '/../includes/autoload.php')) {

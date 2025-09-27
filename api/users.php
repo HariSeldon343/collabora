@@ -9,10 +9,8 @@
  * @since 2025-01-21
  */
 
-// Avvia sessione se non già avviata
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Include configuration first to set session name
+require_once __DIR__ . '/../config_v2.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');

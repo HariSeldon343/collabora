@@ -45,6 +45,11 @@ spl_autoload_register(function ($class) {
         'Collabora\\Auth\\UserRole' => __DIR__ . '/auth_v2.php',
         'Collabora\\Auth\\UserStatus' => __DIR__ . '/auth_v2.php',
         'Collabora\\Auth\\SimpleAuth' => __DIR__ . '/SimpleAuth.php',
+        'Collabora\\Calendar\\CalendarManager' => __DIR__ . '/CalendarManager.php',
+        'Collabora\\Tasks\\TaskManager' => __DIR__ . '/TaskManager.php',
+        'Collabora\\Session\\SessionHelper' => __DIR__ . '/session_helper.php',
+        'Collabora\\Users\\UserManager' => __DIR__ . '/UserManager.php',
+        'Collabora\\Tenants\\TenantManagerV2' => __DIR__ . '/TenantManager_v2.php',
     ];
 
     if (isset($classMap[$class])) {

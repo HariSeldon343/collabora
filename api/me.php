@@ -4,10 +4,8 @@
  * Returns current user information and session status
  */
 
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Include configuration first to set session name
+require_once __DIR__ . '/../config_v2.php';
 
 // Set JSON response headers
 header('Content-Type: application/json');

@@ -5,7 +5,9 @@
  * Manages user online status and presence
  */
 
-session_start();
+// Include configuration first to set session name
+require_once __DIR__ . '/../config_v2.php';
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -18,9 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Include required files
-require_once '../includes/SimpleAuth.php';
-require_once '../includes/ChatManager.php';
-require_once '../includes/db.php';
+require_once __DIR__ . '/../includes/SimpleAuth.php';
+require_once __DIR__ . '/../includes/ChatManager.php';
+require_once __DIR__ . '/../includes/db.php';
 
 // Initialize authentication
 $auth = new SimpleAuth();

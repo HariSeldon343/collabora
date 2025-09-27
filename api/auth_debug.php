@@ -5,6 +5,10 @@
  * WARNING: This should be disabled in production!
  */
 
+// Include configuration FIRST before any output
+require_once __DIR__ . '/../config_v2.php';
+
+// Now send headers
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 
@@ -16,9 +20,6 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
-// Include configuration
-require_once __DIR__ . '/../config_v2.php';
 
 // Check if debug mode is enabled
 if (!defined('DEBUG_MODE') || !DEBUG_MODE) {

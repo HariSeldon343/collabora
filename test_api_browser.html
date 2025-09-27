@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Endpoint Tester</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4F46E5;
+            padding-bottom: 10px;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .endpoint {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #ccc;
+        }
+        .endpoint.success {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+        .endpoint.error {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        .endpoint.warning {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+        .status {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status.success {
+            background: #10b981;
+            color: white;
+        }
+        .status.error {
+            background: #ef4444;
+            color: white;
+        }
+        .status.warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .status.pending {
+            background: #6b7280;
+            color: white;
+        }
+        button {
+            background: #4F46E5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #4338ca;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .error-details {
+            color: #991b1b;
+            font-size: 12px;
+            margin-top: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 API Endpoint Tester</h1>
+
+    <div class="info-box">
+        <strong>ℹ️ Instructions:</strong>
+        <ol>
+            <li>Make sure you are logged in to the system first</li>
+            <li>Click "Test All Endpoints" to check each API</li>
+            <li>Green = Working, Red = Error, Orange = Authentication needed</li>
+            <li>If you see 500 errors, run the migration script</li>
+        </ol>
+    </div>
+
+    <div class="test-container">
+        <h2>API Endpoints</h2>
+        <button onclick="testAllEndpoints()" id="testBtn">Test All Endpoints</button>
+
+        <div id="endpoints">
+            <div class="endpoint" data-url="/api/users.php">
+                <span>👥 /api/users.php - User Management</span>
+                <span class="status pending">Not tested</span>
+            </div>
+            <div class="endpoint" data-url="/api/channels.php">
+                <span>💬 /api/channels.php - Chat Channels</span>
+                <span class="status pending">Not tested</span>
+            </div>
+            <div class="endpoint" data-url="/api/chat-poll.php?last_message_id=0">
+                <span>🔄 /api/chat-poll.php - Message Polling</span>
+                <span class="status pending">Not tested</span>
+            </div>
+            <div class="endpoint" data-url="/api/calendars.php">
+                <span>📅 /api/calendars.php - Calendars</span>
+                <span class="status pending">Not tested</span>
+            </div>
+            <div class="endpoint" data-url="/api/events.php">
+                <span>📌 /api/events.php - Calendar Events</span>
+                <span class="status pending">Not tested</span>
+            </div>
+            <div class="endpoint" data-url="/api/messages.php?channel_id=1">
+                <span>📨 /api/messages.php - Messages</span>
+                <span class="status pending">Not tested</span>
+            </div>
+            <div class="endpoint" data-url="/api/presence.php">
+                <span>🟢 /api/presence.php - User Presence</span>
+                <span class="status pending">Not tested</span>
+            </div>
+            <div class="endpoint" data-url="/api/tasks.php">
+                <span>✅ /api/tasks.php - Tasks</span>
+                <span class="status pending">Not tested</span>
+            </div>
+            <div class="endpoint" data-url="/api/task-lists.php">
+                <span>📋 /api/task-lists.php - Task Lists</span>
+                <span class="status pending">Not tested</span>
+            </div>
+        </div>
+
+        <div class="results" id="results" style="display:none;">
+            <strong>Test Results:</strong>
+            <pre id="resultDetails"></pre>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>Summary</h2>
+        <div id="summary">
+            <p>Click "Test All Endpoints" to begin testing...</p>
+        </div>
+    </div>
+
+    <script>
+        // Get base URL dynamically
+        const getBaseUrl = () => {
+            const path = window.location.pathname;
+            const parts = path.split('/');
+            const collaboraIndex = parts.indexOf('collabora');
+            if (collaboraIndex !== -1) {
+                return parts.slice(0, collaboraIndex + 1).join('/');
+            }
+            return '/Nexiosolution/collabora';
+        };
+
+        const BASE_URL = getBaseUrl();
+
+        async function testEndpoint(url) {
+            const fullUrl = BASE_URL + url;
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch(fullUrl, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const responseTime = Date.now() - startTime;
+                let data = null;
+
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    // Response might not be JSON
+                }
+
+                return {
+                    url: url,
+                    status: response.status,
+                    statusText: response.statusText,
+                    success: response.ok,
+                    responseTime: responseTime,
+                    data: data
+                };
+            } catch (error) {
+                return {
+                    url: url,
+                    status: 0,
+                    statusText: error.message,
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function testAllEndpoints() {
+            const button = document.getElementById('testBtn');
+            button.disabled = true;
+            button.textContent = 'Testing...';
+
+            const endpoints = document.querySelectorAll('.endpoint');
+            const results = [];
+            const resultsDiv = document.getElementById('results');
+            const resultDetails = document.getElementById('resultDetails');
+
+            resultsDiv.style.display = 'block';
+            resultDetails.textContent = '';
+
+            for (const endpoint of endpoints) {
+                const url = endpoint.dataset.url;
+                const statusSpan = endpoint.querySelector('.status');
+
+                statusSpan.textContent = 'Testing...';
+                statusSpan.className = 'status pending';
+
+                const result = await testEndpoint(url);
+                results.push(result);
+
+                // Update UI
+                if (result.status === 200) {
+                    endpoint.className = 'endpoint success';
+                    statusSpan.className = 'status success';
+                    statusSpan.textContent = `200 OK (${result.responseTime}ms)`;
+                } else if (result.status === 401) {
+                    endpoint.className = 'endpoint warning';
+                    statusSpan.className = 'status warning';
+                    statusSpan.textContent = '401 Auth Required';
+                } else if (result.status === 404) {
+                    endpoint.className = 'endpoint error';
+                    statusSpan.className = 'status error';
+                    statusSpan.textContent = '404 Not Found';
+                } else if (result.status >= 500) {
+                    endpoint.className = 'endpoint error';
+                    statusSpan.className = 'status error';
+                    statusSpan.textContent = `${result.status} Server Error`;
+
+                    // Add error details
+                    if (result.data && result.data.message) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'error-details';
+                        errorDiv.textContent = result.data.message;
+                        endpoint.appendChild(errorDiv);
+                    }
+                } else if (result.status === 0) {
+                    endpoint.className = 'endpoint error';
+                    statusSpan.className = 'status error';
+                    statusSpan.textContent = 'Network Error';
+                } else {
+                    endpoint.className = 'endpoint warning';
+                    statusSpan.className = 'status warning';
+                    statusSpan.textContent = `${result.status} ${result.statusText}`;
+                }
+
+                // Add to detailed results
+                resultDetails.textContent += `${url}\n`;
+                resultDetails.textContent += `  Status: ${result.status} ${result.statusText}\n`;
+                if (result.responseTime) {
+                    resultDetails.textContent += `  Response Time: ${result.responseTime}ms\n`;
+                }
+                if (result.data) {
+                    resultDetails.textContent += `  Response: ${JSON.stringify(result.data, null, 2).substring(0, 200)}...\n`;
+                }
+                resultDetails.textContent += '\n';
+            }
+
+            // Update summary
+            const successCount = results.filter(r => r.status === 200).length;
+            const authCount = results.filter(r => r.status === 401).length;
+            const errorCount = results.filter(r => r.status >= 500 || r.status === 0 || r.status === 404).length;
+
+            const summaryDiv = document.getElementById('summary');
+            summaryDiv.innerHTML = `
+                <p><strong>Test Complete!</strong></p>
+                <p>✅ Success: ${successCount} endpoints</p>
+                <p>⚠️ Auth Required: ${authCount} endpoints</p>
+                <p>❌ Errors: ${errorCount} endpoints</p>
+                ${errorCount > 0 ? '<p><strong>To fix errors, run: php apply_missing_migrations.php</strong></p>' : ''}
+            `;
+
+            button.disabled = false;
+            button.textContent = 'Test All Endpoints Again';
+        }
+
+        // Auto-test on page load if user wants
+        window.addEventListener('load', () => {
+            console.log('API Tester Ready. Base URL:', BASE_URL);
+        });
+    </script>
+</body>
+</html>

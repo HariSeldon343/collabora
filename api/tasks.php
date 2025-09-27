@@ -5,7 +5,20 @@
  * Supporta CRUD, assegnazioni, commenti e time tracking
  */
 
-// Abilita CORS e headers
+// Carica configurazione e dipendenze PRIMA di qualsiasi output
+require_once __DIR__ . '/../config_v2.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/SimpleAuth.php';
+require_once __DIR__ . '/../includes/session_helper.php';
+require_once __DIR__ . '/../includes/TaskManager.php';
+
+use Collabora\Session\SessionHelper;
+use Collabora\Tasks\TaskManager;
+
+// Inizializza sessione con il nome corretto
+SessionHelper::init();
+
+// ORA possiamo inviare gli headers
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
@@ -16,19 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
-
-// Carica configurazione e dipendenze
-require_once __DIR__ . '/../config_v2.php';
-require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../includes/SimpleAuth.php';
-require_once __DIR__ . '/../includes/session_helper.php';
-require_once __DIR__ . '/../includes/TaskManager.php';
-
-use Collabora\Session\SessionHelper;
-use Collabora\Tasks\TaskManager;
-
-// Inizializza sessione
-SessionHelper::init();
 
 // Funzione per inviare risposta JSON
 function sendResponse(array $data, int $httpCode = 200): void {

@@ -10,6 +10,9 @@
  * - 500: Internal Server Error
  */
 
+// Include configuration first to set session name
+require_once __DIR__ . '/../config_v2.php';
+
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 

@@ -1,10 +1,12 @@
 <?php
 // Direct test of auth API
-header('Content-Type: application/json');
 
-// Include configuration
+// Include configuration FIRST before any output
 require_once __DIR__ . '/../config_v2.php';
 require_once __DIR__ . '/../includes/auth_v2.php';
+
+// Now send headers
+header('Content-Type: application/json');
 
 use Collabora\Auth\AuthenticationV2;
 
